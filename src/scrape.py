@@ -10,6 +10,8 @@ import re
 import os.path
 import posixpath
 
+import util
+
 py2 = sys.version_info.major == 2
 
 #print(sys.stdout.encoding, "encoding")
@@ -24,7 +26,7 @@ if py2:
     from urllib2 import urlopen, HTTPError
 else:
     from urllib.parse import urlparse #, urljoin
-    from urllib.request import urlopen
+    from urllib.request import urlopen, urlretrieve
     from urllib.error import HTTPError
 
 try:
@@ -50,51 +52,14 @@ parse_lib = "html.parser"
 
 
 thisdir = os.path.split(__file__)[0]
-page_cache = os.path.abspath(thisdir) + '/cache'
+page_cache = os.path.abspath(thisdir) + '/download_cache'
 
 extra_log_file = None
 
 class BadInput(ValueError): pass
 
 class TooManyRequests(Exception):
-    remaining_allowed = 80
-
-################################################################################
-### Util
-
-def write_log(text):
-    global verbose_log
-    if mod_python:
-        if extra_log_file:
-            with open(extra_log_file, "a") as f:
-                f.write(text.encode('utf-8') + "\n")
-    else:
-        sys.stdout.write(text)
-
-# Can be overridden by req.log_error() if running under mod_python
-def error_log(text):
-    sys.stderr.write(text + "\n")
-    write_log(text)
-
-def mkdir(dirname):
-    if not os.path.isdir(dirname):
-        try:
-            os.makedirs(dirname)
-        except OSError:
-            if os.path.isdir(dirname):
-                # Race condition: another process created it. Ignore
-                return
-            raise
-
-def create_file(path):
-    """Create an empty file if it doesn't exist"""
-    with open(path, "a"):
-        pass
-
-def strip_strings(strings):
-    """Given a list of strings, strip them""" # and remove whitespace-only strings"""
-    return [x.strip() for x in strings]
-
+    remaining_allowed = 999
 
 ################################################################################
 ### URLs and page fetching
@@ -129,59 +94,79 @@ def is_subpage_of(base_url):
 
 class BadUrl(BadInput): pass
 
-def get_page(url):
-    """Download a page or fetch it from the cache, and return a BS object"""
+def get_url(url, verbose = False):
+    """Download a URL or fetch it from the cache, and return bytes"""
     # Get 'path': local location of cached file
     parsed = urlparse(url)
     path = page_cache + '/' + parsed.netloc + '/' + parsed.path
+    if parsed.query:
+        path += '?' + parsed.query
     if path[-1] == '/':
         path += 'index.html'
     noexist_file = path + '.missing'
-    mkdir(os.path.dirname(path))
-    print("---FETCHING", path)
+    util.mkdir(os.path.dirname(path))
 
     if os.path.isfile(noexist_file):
         raise BadUrl("%s does not exist (cached)" % (url))
 
-    if not os.path.isfile(path):
+    if os.path.isfile(path):
+        if verbose: print("   found in cache:", url)
+        pass
+    else:
+        print("    downloading", url)
         if TooManyRequests.remaining_allowed <= 0:
             raise TooManyRequests('Fetching ' + url)
         TooManyRequests.remaining_allowed -= 1
-        time.sleep(0.4)
+        time.sleep(0.1)
+        fullurl = url
+        if not parsed.scheme:
+            fullurl = 'http:' + url
 
-        print("Retrieving " + url)
-        #urlretrieve(url, path)
-        try:
-            response = urlopen(url)
-        except ValueError as e:
-            create_file(noexist_file)
-            raise BadUrl('Invalid URL "<b>%s</b>": %s' % (url, str(e)))
-        # Check whether redirected
-        if url != response.geturl():
-            create_file(noexist_file)
-            raise BadUrl("%s does not exist (it redirects to %s)" % (url, response.geturl()))
-        data = response.read()
-        # python 2: data is hopefully utf-8 encoded bytestream
-        # python 3: data has been decoded to unicode, recode it
-        if not py2:
-            data = data.decode('utf-8')
-        try:
-            with open(path, "w") as f:
-                f.write(data)
-        except:
-            os.unlink(path)
+        if verbose: print("Retrieving " + url)
 
-    with open(path) as fil:
-        data = fil.read()
-        data = data.decode('utf-8')
-        # Convert non-breaking spaces to spaces
-        #data = data.replace(u'\xa0', ' ')
-        data = data.replace("&#160;", ' ')
-        return BeautifulSoup(data, parse_lib)
+        if False:
+            # This checks for redirections, considering them errors
+            try:
+                response = urlopen(fullurl)
+            except ValueError as e:
+                util.create_file(noexist_file)
+                raise BadUrl('Invalid URL "<b>%s</b>": %s' % (url, str(e)))
 
-def clean_page(page):
-    """Given a BS page, remove junk"""
-    page.head.clear()
-    for tag in page("script"):
-        tag.decompose()  # delete
-    return str(page)
+            # Check whether redirected
+            if fullurl != response.geturl():
+                util.create_file(noexist_file)
+                raise BadUrl("%s does not exist (it redirects to %s)" % (url, response.geturl()))
+            data = response.read()
+            # python 2: data is hopefully utf-8 encoded bytestream
+            # python 3: data has been decoded to unicode, recode it
+            if not py2:
+                data = data.decode('utf-8')
+            try:
+                with open(path, "w") as f:
+                    f.write(data)
+            except e:
+                print(e)
+                os.unlink(path)
+            return data
+
+        else:
+            filename, headers = urlretrieve(fullurl, path)
+
+    with open(path, 'rb') as fil:
+        return fil.read()
+
+def get_page(url):
+    """Download a URL or fetch it from the cache, and return a BS object"""
+    data = get_url(url)
+    data = data.decode('utf-8')
+    # Convert non-breaking spaces to spaces
+    #data = data.replace(u'\xa0', ' ')
+    data = data.replace("&#160;", ' ')
+    return BeautifulSoup(data, parse_lib)
+
+# def clean_page(page):
+#     """Given a BS page, remove junk"""
+#     page.head.clear()
+#     for tag in page("script"):
+#         tag.decompose()  # delete
+#     return str(page)

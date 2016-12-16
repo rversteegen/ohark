@@ -1,0 +1,5 @@
+SetHandler mod_python
+PythonOption wsgi.application website::application
+PythonHandler mod_python_wsgi
+
+

@@ -1,9 +1,18 @@
 import os.path
 from cgi import parse_qs, escape
+import sys
+
+
+py2 = sys.version_info[0] == 2
 
 # mod_python_wsgi doesn't really set the path variables so that it's
 # possible to see where we are...
 WEB_ROOT = '/home/teeemcee/web'
+
+def text(obj):
+    if py2:
+        return str(obj)
+    return str(obj).encode('utf-8')
 
 def application(environ, start_response):
     fname = WEB_ROOT + environ['PATH_INFO']
@@ -24,4 +33,4 @@ def application(environ, start_response):
         param = escape(parameters['param'][0])
 
     start_response('200 OK', [('Content-Type', 'text/html')])
-    return [str(environ)]
+    return [text(environ)]

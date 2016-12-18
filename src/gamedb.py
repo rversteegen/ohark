@@ -7,7 +7,9 @@ import pickle
 import os
 import util
 
-DB_DIR = 'databases'
+DB_DIR = os.path.join(os.path.dirname(__file__), 'databases')
+#print(DB_DIR)
+
 
 SOURCES = [
     "cp",
@@ -37,10 +39,15 @@ class Game:
         self.reviews = []            # Direct review URLs
         #self.download_count = None  # Number of times downloaded
         #self.rating = None          # Could be a number or a letter
+        self.tags = []               # List of tags (strings)
         #self.rpg_location           # Gives the path to the .rpg/rpgdir file inside the .zip, in case there is more than one
 
     # def __str__(self):
     #     return self.name
+
+    def columns(self):
+        """For tabulating. Return an iterable"""
+        return self.name, self.author, self.url, self.description
 
     def __repr__(self):
         return 'Game<%s>' % (self.name,)
@@ -64,8 +71,9 @@ class GameList:
         Loads from saved database with the given name if already exists, otherwise creates a blank one.
         """
         ret = cls(source_name)
-        if os.path.isfile(dbfilename):
-            with open(dbfilename, 'rb') as dbfile:
+        fname = db_filename(source_name)
+        if os.path.isfile(fname):
+            with open(fname, 'rb') as dbfile:
                 ret.games = pickle.load(dbfile)
         return ret
 

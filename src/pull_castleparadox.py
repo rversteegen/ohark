@@ -70,8 +70,8 @@ def process_game_page(url):
     print(game.__dict__)
     db.games[srcid] = game
 
-def process_index_page(url):
-    print("Fetching page..")
+def process_index_page(url, limit = 9999):
+    print("Fetching/parsing page...")
     dom = scrape.get_page(url, 'latin-1')
 
     container = dom.find('td', width='410')
@@ -80,6 +80,9 @@ def process_index_page(url):
         url = 'http://castleparadox.com/' + util.remove_sid(tag.a['href'])
         process_game_page(url)
         #time.sleep(0.1)
+        limit -= 1
+        if limit <= 0:
+            break
 
 
 process_index_page('http://castleparadox.com/search-gamelist.php?mirror=true')

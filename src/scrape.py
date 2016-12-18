@@ -48,9 +48,14 @@ if mod_python:
 else:
     from bs4 import BeautifulSoup, NavigableString
 
-# html.parser is less lenient
-#parse_lib = "html5lib"
-parse_lib = "html.parser"
+try:
+    import lxml
+    parse_lib = "lxml"
+except ImportError:
+    # html.parser is less lenient
+    #parse_lib = "html5lib"
+    # To support python 2.6, can't use html.parser which isn't lenient enough
+    parse_lib = "html.parser"
 
 
 thisdir = os.path.split(__file__)[0]

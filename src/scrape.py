@@ -24,6 +24,7 @@ py2 = sys.version_info[0] == 2
 
 if py2:
     from urlparse import urlparse
+    from urllib import urlretrieve
     from urllib2 import urlopen, HTTPError
 else:
     from urllib.parse import urlparse #, urljoin

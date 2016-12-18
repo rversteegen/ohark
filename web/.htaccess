@@ -1,4 +1,5 @@
 SetHandler mod_python
+PythonPath "sys.path+['/home/teeemcee/ohr/ohr_archive/src']"
 PythonOption wsgi.application website::application
 PythonHandler mod_python_wsgi
 

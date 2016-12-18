@@ -2,6 +2,7 @@ import os.path
 from cgi import parse_qs, escape
 import sys
 
+import gamedb
 
 py2 = sys.version_info[0] == 2
 
@@ -9,10 +10,12 @@ py2 = sys.version_info[0] == 2
 # possible to see where we are...
 WEB_ROOT = '/home/teeemcee/web'
 
+db = gamedb.GameList.load('cp')
+
 def text(obj):
     if py2:
-        return str(obj)
-    return str(obj).encode('utf-8')
+        return escape(str(obj))
+    return escape(str(obj)).encode('utf-8')
 
 def application(environ, start_response):
     fname = WEB_ROOT + environ['PATH_INFO']
@@ -33,4 +36,4 @@ def application(environ, start_response):
         param = escape(parameters['param'][0])
 
     start_response('200 OK', [('Content-Type', 'text/html')])
-    return [text(environ)]
+    return [text(db.games), text(environ)]

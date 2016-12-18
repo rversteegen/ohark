@@ -1,5 +1,6 @@
 import sys
 import os
+import re
 
 ################################################################################
 ### Util
@@ -51,3 +52,17 @@ def program_output(*args, **kwargs):
 def shell_output(*args, **kwargs):
     """Runs a program on the shell and returns stdout as a string"""
     return program_output(*args, shell=True, **kwargs)
+
+_sid_regex = re.compile('(.*)(&(amp;)?sid=[0-9a-f]*)(.*)')
+
+def remove_sid(url):
+    """Remove &sid=... query, if any, from a url"""
+    match = _sid_regex.match(url)
+    if match:
+        return match.group(1) + match.group(4)
+    return url
+
+assert remove_sid('gamelist-display.php?game=206&amp;sid=d12a342f6ae0d&foo=bar') == 'gamelist-display.php?game=206&foo=bar'
+assert remove_sid('gamelist-display.php?game=206&sid=d12a342f6ae0d&foo=bar') == 'gamelist-display.php?game=206&foo=bar'
+assert remove_sid('gamelist-display.php?game=206&sid=d12a342f6ae0d') == 'gamelist-display.php?game=206'
+assert remove_sid('gamelist-display.php?game=206') == 'gamelist-display.php?game=206'

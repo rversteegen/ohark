@@ -5,6 +5,7 @@ Provides get_page for downloading a page from the web or grabbing it from
 a local cache.
 """
 
+from __future__ import print_function
 import sys
 import time
 import re

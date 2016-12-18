@@ -13,7 +13,7 @@ import posixpath
 
 import util
 
-py2 = sys.version_info.major == 2
+py2 = sys.version_info[0] == 2
 
 #print(sys.stdout.encoding, "encoding")
 

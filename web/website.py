@@ -5,7 +5,7 @@ from cgi import parse_qs, escape
 # possible to see where we are...
 WEB_ROOT = '/home/teeemcee/web'
 
-def app(environ, start_response):
+def application(environ, start_response):
     fname = WEB_ROOT + environ['PATH_INFO']
     file_wrapper = environ['wsgi.file_wrapper']
 

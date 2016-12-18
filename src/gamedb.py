@@ -29,12 +29,15 @@ class Game:
         self.name = ""
         self.author = ""
         self.author_link = ""
-        #altern_names: List[str]
         self.description = ""
-        #self.external_links = []   # webpages
-        self.screenshots = []      # local file paths
-        self.download = ""    # URL for page where game can be downloaded
-        #self.rpg_location   # Gives the path to the .rpg/rpgdir file inside the .zip, in case there is more than one
+        #self.external_links = []    # webpages
+        self.url = ""                # URL for this game entry
+        self.screenshots = []        # Local file paths
+        self.downloads = []          # Direct download URLs
+        self.reviews = []            # Direct review URLs
+        #self.download_count = None  # Number of times downloaded
+        #self.rating = None          # Could be a number or a letter
+        #self.rpg_location           # Gives the path to the .rpg/rpgdir file inside the .zip, in case there is more than one
 
     # def __str__(self):
     #     return self.name

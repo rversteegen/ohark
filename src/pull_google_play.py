@@ -20,7 +20,8 @@ def process_game_page(name, url):
 
     game = gamedb.Game()
     game.name = str(dom.find('div', class_='id-app-title').string)
-    game.download = url
+    game.url = url
+    game.downloads = [url]
     print ("Processing game:", game.name, "  \tsrcid:", srcid)
 
     author_div = dom.find('div', itemprop='author')

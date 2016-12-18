@@ -156,10 +156,10 @@ def get_url(url, verbose = False):
     with open(path, 'rb') as fil:
         return fil.read()
 
-def get_page(url):
+def get_page(url, encoding = 'utf-8'):
     """Download a URL or fetch it from the cache, and return a BS object"""
     data = get_url(url)
-    data = data.decode('utf-8')
+    data = data.decode(encoding)
     # Convert non-breaking spaces to spaces
     #data = data.replace(u'\xa0', ' ')
     data = data.replace("&#160;", ' ')

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 """
-
+Provides get_page for downloading a page from the web or grabbing it from
+a local cache.
 """
 
 import sys

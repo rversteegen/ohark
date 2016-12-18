@@ -6,27 +6,38 @@ import time
 from bs4 import BeautifulSoup, NavigableString
 
 import scrape
-from gamedb import db
+import gamedb
 import util
 
+db = gamedb.GameList('googleplay')
 
 def process_game_page(name, url):
     """Returns description"""
     dom = scrape.get_page(url)
 
     assert '?id=' in url and len(url.split('=')) == 2, "Expected only one query in page url, the id"
-    id = url.split('=')[1]
+    srcid = url.split('=')[1]
 
-    game = db.find_game(id, "googleplay")
+    game = gamedb.Game()
     game.name = str(dom.find('div', class_='id-app-title').string)
-    print ("Processing game:", game.name, "  \tid:", id)
+    game.download = url
+    print ("Processing game:", game.name, "  \tsrcid:", srcid)
+
+    author_div = dom.find('div', itemprop='author')
+    game.author = str(author_div.find(itemprop='name').string)
+    game.author_link = 'https://play.google.com' + author_div.a['href']
 
     # Grab description
     descrip_tag = dom.find(itemprop='description')
     game.description = '\n'.join(str(tag) for tag in descrip_tag.div.contents)
 
+    # Categories (only one per game?)
+    game.tags = []
+    for link in dom.find_all('a', class_='document-subtitle category'):
+        game.tags.append(str(link.span.string))
+
     # Grab screenshots
-    datadir = "data/googleplay/" + id + '/'
+    datadir = "data/googleplay/" + srcid + '/'
     util.mkdir(datadir)
 
     for num, img in enumerate(dom.find_all('img', class_='full-screenshot')):
@@ -34,7 +45,9 @@ def process_game_page(name, url):
         filename = datadir + 'screen%d.png' % num
         with open(filename, 'wb') as fil:
             fil.write(data)
-        game.screenshots.add(filename)
+        game.screenshots.append(filename)
+
+    db.games[srcid] = game
 
 def process_index_page(url):
     dom = scrape.get_page(url)
@@ -49,5 +62,5 @@ def process_index_page(url):
 
 process_index_page('https://play.google.com/store/search?q=ohrrpgce&c=apps')
 
-print(db.db)
+print(db.games)
 db.save()

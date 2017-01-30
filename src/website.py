@@ -5,6 +5,7 @@ import tabulate
 
 import util
 import gamedb
+import scrape
 
 py2 = sys.version_info[0] == 2
 
@@ -37,6 +38,14 @@ with open(STATIC_ROOT + 'page_template.html', 'r') as temp:
         PAGE_TEMPLATE = temp.read()
 
 
+class RequestInfo:
+    def __init__(self, start_response):
+        self.start = util.timer()
+        self.set_header = start_response
+        self.footer_info = ''
+
+reqinfo = RequestInfo(None)  # dummy
+
 ################################################################################
 
 def handle_gamelists(path):
@@ -45,7 +54,9 @@ def handle_gamelists(path):
         return render_gamelists()
     else:
         listname = path[1]
-        db = gamedb.GameList.load(listname)
+        with util.Timer() as timing:
+            db = gamedb.GameList.load(listname)
+        reqinfo.footer_info += " DB load in %s. " % timing
         if not db:
             return render_page("Game list %s does not exist." % listname, status = '404 Not Found')
 
@@ -71,18 +82,19 @@ def render_gamelist(db):
     Render a list of games.
     """
     ret = util.link("gamelists/", "Back to gamelists ...") + "\n"
-    ret += "<p>Click the Name to go to the game entry.</p><br/>\n"
+    ret += "<p>Click the Name to go to the game entry.</p>\n"
+    ret += "<p>%s games.</p><br/>\n" % len(db.games)
     headers = 'key', 'Name', 'Author', 'Link', 'Description'
     table = []
     for gameid, game in db.games.items():
-        print(type(game.author), [hex(ord(x)) for x in game.author])
-        table.append( [game.name,
+        #print(type(game.author), [hex(ord(x)) for x in game.author])
+        table.append( [game.name.lower(),
                        gameid,
                        util.link('gamelists/%s/%s/' % (db.name, gameid), game.get_name()),
                        #util.link(game.author_link, game.get_author()),
                        game.get_author(),
                        util.link(game.url, "External"),
-                       util.shorten(game.description, 100),
+                       util.shorten(scrape.strip_html(game.description), 150),
         ] )
     table.sort()
     # Strip the key
@@ -111,8 +123,12 @@ def render_game(listname, gameid, game):
 ################################################################################
 
 def render_page(content, title = 'OHR Archive', status = '200 OK'):
-    set_header(status, [('Content-Type', 'text/html')])
-    return [encode(PAGE_TEMPLATE.format(content = content, title = title, root = URL_ROOTPATH))]
+    reqinfo.set_header(status, [('Content-Type', 'text/html')])
+    reqinfo.footer_info += " Page rendered in %.3fs." % (util.timer() - reqinfo.start)
+    return [encode(PAGE_TEMPLATE.format(
+        content = content, title = title, root = URL_ROOTPATH,
+        footer_info = reqinfo.footer_info
+    ))]
 
 def templated_static_page(fname, status = '200 OK'):
     """Try to render an .html link by substituting the corresponding .content.html file into
@@ -154,8 +170,8 @@ def static_serve(environ, start_response):
         return ret
 
 def application(environ, start_response):
-    global set_header
-    set_header = start_response
+    global reqinfo
+    reqinfo = RequestInfo(start_response)
 
     ret = static_serve(environ, start_response)
     if ret:
@@ -168,7 +184,6 @@ def application(environ, start_response):
         param = escape(parameters['param'][0])
 
     # Figure out what to delegate to
-#    return render_page(text(parameters))
 
     path = environ.get('PATH_INFO', '/').lower().split('/')[1:]
     while '' in path:
@@ -179,7 +194,4 @@ def application(environ, start_response):
     else:
         return notfound(path)
 
-    #return [encode(ret)]
-##, db.games.keys()))#, headers)) #, 'html'))
-
-    return render_page(text(environ))
+    #return render_page(text(environ))

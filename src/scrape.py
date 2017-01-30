@@ -190,6 +190,11 @@ def get_page(url, encoding = 'utf-8', cache = True):
 
 ################################################################################
 
+def strip_html(text):
+    "Remove HTML tags"
+    dom = BeautifulSoup(text, parse_lib)
+    return ' '.join(tostr(snippet) for snippet in dom.find_all(string=True))
+
 def tag_contents(tag):
     "Get the html contents of a BS4 tag. Same as just str(tag), but excludes the tag itself"
     # Need to convert tags to str/unicode. Must not call 'str' on

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 Pull game data from Google Play and add to the DB
 """
@@ -8,6 +8,8 @@ from bs4 import BeautifulSoup, NavigableString
 import scrape
 import gamedb
 import util
+
+CACHE_INDEX = False
 
 db = gamedb.GameList('googleplay')
 
@@ -51,7 +53,7 @@ def process_game_page(name, url):
     db.games[srcid] = game
 
 def process_index_page(url):
-    dom = scrape.get_page(url)
+    dom = scrape.get_page(url, cache = CACHE_INDEX)
 
     for link in dom.find_all('a', class_='title'):
         name = link['title']

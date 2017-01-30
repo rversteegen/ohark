@@ -35,7 +35,10 @@ def process_game_page(url):
 
     # Grab description
     descrip_tag = dom.find(id='description').find('span', class_='gen')
-    game.description = '\n'.join(line.encode('utf-8').strip() for line in descrip_tag.find_all(string=True))
+    # Replace <br/> tags with newlines
+    #game.description = '\n'.join(line.encode('utf-8').strip() for line in descrip_tag.find_all(string=True))
+    # Preserve <br/> tags
+    game.description = scrape.tag_contents(descrip_tag)
 
     # Download optional
     download_link = dom.find('a', string=re.compile('Download: '))

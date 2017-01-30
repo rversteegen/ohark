@@ -11,11 +11,11 @@ DB_DIR = os.path.join(os.path.dirname(__file__), 'databases')
 #print(DB_DIR)
 
 
-SOURCES = [
-    "cp",
-    "ss",
-    "googleplay",
-]
+SOURCES = {
+    "cp": {'name': "Castle Paradox"},
+    "ss": {'name': "Slime Salad"},
+    "googleplay": {'name': "Google Play"},
+}
     # "bahamut",
     # "opohr",
     # "ouya",
@@ -45,9 +45,15 @@ class Game:
     # def __str__(self):
     #     return self.name
 
+    def get_name(self):
+        return self.name or "(blank name)"
+
+    def get_author(self):
+        return self.author or "(blank author)"
+
     def columns(self):
         """For tabulating. Return an iterable"""
-        return self.name, self.author, self.url, self.description
+        return self.name, self.author, self.url
 
     def __repr__(self):
         return 'Game<%s>' % (self.name,)
@@ -75,7 +81,7 @@ class GameList:
         if os.path.isfile(fname):
             with open(fname, 'rb') as dbfile:
                 ret.games = pickle.load(dbfile)
-        return ret
+                return ret
 
     def save(self):
         """
@@ -83,7 +89,7 @@ class GameList:
         """
         util.mkdir(DB_DIR)
         with open(db_filename(self.name), 'wb') as dbfile:
-            pickle.dump(self.games, dbfile)
+            pickle.dump(self.games, dbfile, 2)  # protocol 2 for python 2 compat
 
 
 class _GameIndex():
@@ -92,7 +98,7 @@ class _GameIndex():
         # 'games': [],    # List[Game]
         # 'indices': {},  # src -> src_id -> Game
         for src in SOURCES:
-            self.db['indices'][src.lower()] = {}
+            self.db['indices'][src.key.lower()] = {}
 
 
     def find_game(self, srcid, src, create = True):
@@ -101,7 +107,7 @@ class _GameIndex():
         Get the object for a game, or create a new one if it doesn't exist.
 
         src: string
-            The name of an element of SOURCES.
+            The .key of an element of SOURCES.
         srcid: string or int
             An id in whatever format is used by this source, e.g. id number or package name.
         create: bool

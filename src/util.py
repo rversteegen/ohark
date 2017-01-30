@@ -66,3 +66,13 @@ assert remove_sid('gamelist-display.php?game=206&amp;sid=d12a342f6ae0d&foo=bar')
 assert remove_sid('gamelist-display.php?game=206&sid=d12a342f6ae0d&foo=bar') == 'gamelist-display.php?game=206&foo=bar'
 assert remove_sid('gamelist-display.php?game=206&sid=d12a342f6ae0d') == 'gamelist-display.php?game=206'
 assert remove_sid('gamelist-display.php?game=206') == 'gamelist-display.php?game=206'
+
+def link(href, text):
+    if len(href):
+        return '<a href="' + href + '">' + text + '</a>'
+    return text
+
+def shorten(text, maxlen):
+    if len(text) > maxlen - 3:
+        return text[:maxlen - 3] + "..."
+    return text

@@ -102,7 +102,7 @@ def is_subpage_of(base_url):
 
 class BadUrl(BadInput): pass
 
-def get_url(url, verbose = False):
+def get_url(url, verbose = False, cache = True):
     """Download a URL or fetch it from the cache, and return bytes"""
     # Get 'path': local location of cached file
     parsed = urlparse(url)
@@ -115,11 +115,12 @@ def get_url(url, verbose = False):
     util.mkdir(os.path.dirname(path))
 
     if os.path.isfile(noexist_file):
-        raise BadUrl("%s does not exist (cached)" % (url))
+        if cache:
+            raise BadUrl("%s does not exist (cached)" % (url))
+        os.remove(noexist_file)
 
-    if os.path.isfile(path):
+    if cache and os.path.isfile(path):
         if verbose: print("   found in cache:", url)
-        pass
     else:
         print("    downloading", url)
         if TooManyRequests.remaining_allowed <= 0:
@@ -163,9 +164,9 @@ def get_url(url, verbose = False):
     with open(path, 'rb') as fil:
         return fil.read()
 
-def get_page(url, encoding = 'utf-8'):
+def get_page(url, encoding = 'utf-8', cache = True):
     """Download a URL or fetch it from the cache, and return a BS object"""
-    data = get_url(url)
+    data = get_url(url, cache = cache)
     data = data.decode(encoding)
     # Convert non-breaking spaces to spaces
     #data = data.replace(u'\xa0', ' ')
@@ -178,3 +179,9 @@ def get_page(url, encoding = 'utf-8'):
 #     for tag in page("script"):
 #         tag.decompose()  # delete
 #     return str(page)
+
+################################################################################
+
+def tag_contents(tag):
+    "Get the html contents of a BS4 tag. Same as just str(tag), but excludes the tag itself"
+    return ''.join(str(piece).strip().encode('utf-8') for piece in tag.contents)

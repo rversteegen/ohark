@@ -3,6 +3,7 @@ from cgi import parse_qs, escape
 import sys
 import tabulate
 
+import util
 import gamedb
 
 py2 = sys.version_info[0] == 2
@@ -19,8 +20,6 @@ URL_ROOTPATH = '/'  #'/ohr/ark/'
 print(os.path.abspath('.'))
 print(__file__)
 
-db = gamedb.GameList.load('cp')
-
 def encode(obj):
     """Convert to correct format for returning to WSGI server"""
     if py2:
@@ -34,25 +33,81 @@ def text(obj):
 with open(STATIC_ROOT + 'page_template.html', 'r') as temp:
     PAGE_TEMPLATE = temp.read()
 
-def render_page(content, title = 'OHR Archive', status = '200 OK'):
-    set_header(status, [('Content-Type', 'text/html')])
-    return [encode(PAGE_TEMPLATE.format(content = content, title = title, root = URL_ROOTPATH))]
 
-def gamelists(path):
-    ret = "The following gamelists have been imported:<br/>"
+################################################################################
+
+def handle_gamelists(path):
+    "Delegate all URLs under gamelists/"
+    if len(path) == 1:
+        return render_gamelists()
+    else:
+        listname = path[1]
+        db = gamedb.GameList.load(listname)
+        if not db:
+            return render_page("Game list %s does not exist." % listname, status = '404 Not Found')
+
+        if len(path) == 2:
+            return render_gamelist(db)
+        else:
+            gameid = path[2]
+            if gameid not in db.games:
+                return render_page("Game %s/%s does not exist." % (listname, gameid), status = '404 Not Found')
+            return render_game(listname, gameid, db.games[gameid])
+
+################################################################################
+
+def render_gamelists():
+    ret = "The following gamelists have been imported:\n<ul>"
+    for src, info in gamedb.SOURCES.iteritems():
+        ret += '<li> <a href="gamelists/%s">%s</a> </li>\n' % (src, info['name'])
+    ret += '</ul>'
     return render_page(ret)
 
-def gamelist(games):
+def render_gamelist(db):
     """
     Render a list of games.
     """
-    headers = 'name', 'author', 'url', 'description'
-    ret = tabulate.tabulate((game.columns() for game in db.games.values()), headers, 'html')
+    ret = util.link("gamelists/", "Back to gamelists ...") + "\n"
+    ret += "<p>Click the Name to go to the game entry.</p><br/>\n"
+    headers = 'key', 'Name', 'Author', 'Link', 'Description'
+    table = []
+    for gameid, game in db.games.iteritems():
+        table.append( [game.name,
+                       gameid,
+                       util.link('gamelists/%s/%s/' % (db.name, gameid), game.get_name()),
+                       util.link(game.author_link, game.get_author()),
+                       util.link(game.url, "External"),
+                       util.shorten(game.description, 100),
+        ] )
+    table.sort()
+    # Strip the key
+    table = [x[1:] for x in table]
+    ret += tabulate.tabulate(table, headers, 'html')
     return render_page(ret)
 
-def notfound(path):
-    return (templated_static_page('404.html', status = '404 Not Found')
-            or render_page("Not found.", status = '404 Not Found'))   # fallback
+def render_game(listname, gameid, game):
+    ret = util.link("gamelists/" + listname + "/", "Back to gamelist ...") + "\n"
+    ret += "<h1>%s</h1>" % game.get_name()
+    ret += """<table class="game" border="0">\n<tbody>\n"""
+    def add_row(key, val):
+        return '<tr><td class="heading">%s</td><td>%s</td></tr>\n' % (key, val)
+
+    ret += add_row("Author", util.link(game.author_link, game.get_author()))
+    ret += add_row("Original entry", util.link(game.url, gameid) + " on " + gamedb.SOURCES[listname]['name'])
+    ret += add_row("Description", game.description)
+    ret += add_row("Tags", ", ".join(game.tags))
+    ret += add_row("Screenshots", game.screenshots) #"%d downloaded" % (len(game.screenshots),))
+    ret += add_row("Downloads", str(game.downloads))
+    ret += add_row("Reviews", str(game.reviews))
+
+    ret += "</tbody></table>\n"
+    return render_page(ret)
+
+################################################################################
+
+def render_page(content, title = 'OHR Archive', status = '200 OK'):
+    set_header(status, [('Content-Type', 'text/html')])
+    return [encode(PAGE_TEMPLATE.format(content = content, title = title, root = URL_ROOTPATH))]
 
 def templated_static_page(fname, status = '200 OK'):
     """Try to render an .html link by substituting the corresponding .content.html file into
@@ -62,6 +117,10 @@ def templated_static_page(fname, status = '200 OK'):
     if extn == '.html' and os.path.isfile(pagename + '.content.html'):
         with open(pagename + '.content.html', 'r') as temp:
             return render_page(temp.read(), status = status)
+
+def notfound(path):
+    return (templated_static_page('404.html', status = '404 Not Found')
+            or render_page("Not found.", status = '404 Not Found'))   # fallback
 
 def static_serve(environ, start_response):
     """Handles static file requests. Only needed when using wsgiref.simple_server"""
@@ -107,8 +166,11 @@ def application(environ, start_response):
 #    return render_page(text(parameters))
 
     path = environ.get('PATH_INFO', '/').lower().split('/')[1:]
+    while '' in path:
+        path.remove('')
+    print path
     if path[0] == "gamelists":
-        return gamelists(path)
+        return handle_gamelists(path)
     else:
         return notfound(path)
 

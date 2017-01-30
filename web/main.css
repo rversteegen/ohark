@@ -1,6 +1,9 @@
 body {
     background-color: #333333;
     color: #dddddd;
+    font-family: Courier New;
+    font-size: 90%;
+
 }
 
 a {
@@ -8,9 +11,34 @@ a {
     text-decoration: underline;
 }
 
+table {
+/*    padding: 10px 4px;*/
+    border-spacing: 10px;
+  border-collapse: collapse;
+}
+
+
+tr { 
+  border-bottom: solid grey;
+  border-width: 1px 0;
+}
+
+td {
+    padding: 10px 10px;
+}
+
+table.game {
+    padding: 10px 10px;
+}
+
 .footer {
     color: #aaaaaa;
-    padding: 9px 0 9px 0;
+    padding: 35px 0 9px 0;
     text-align: center;
     font-size: 75%;
+}
+
+.heading {
+    font-weight: bold;
+    font-size: 110%;
 }

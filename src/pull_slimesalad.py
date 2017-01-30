@@ -36,7 +36,11 @@ def process_game_page(url):
 
     # Grab description
     descrip_tag = dom.find(class_='postbody')
-    game.description = '\n'.join(line.encode('utf-8').strip() for line in descrip_tag.strings)
+    # Remove <br> tags which are added on every newline
+    # (Note: same games like Willy's also include <p> html, which gets lost
+    #game.description = '\n'.join(line.encode('utf-8').strip() for line in descrip_tag.strings)
+    # Preserve all
+    game.description = scrape.tag_contents(descrip_tag)
 
     # Downloads
     for tag in dom.find_all('a', href=re.compile('download\.php')):
@@ -53,7 +57,7 @@ def process_game_page(url):
 
     # Grab screenshots
     for img_tag in dom.find_all('img', class_='attach_img'):
-        datadir = 'data/cp/' + srcid + '/'
+        datadir = 'data/%s/%s/' % (db.name, srcid)
         util.mkdir(datadir)
 
         data = scrape.get_url('http://www.slimesalad.com/forum/' + img_tag['src'])

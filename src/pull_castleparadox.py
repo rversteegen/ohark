@@ -10,24 +10,30 @@ from bs4 import BeautifulSoup, NavigableString
 import scrape
 import gamedb
 import util
+from util import py2, tostr
 
 db = gamedb.GameList('cp')
 
+# Unfortunately some text is utf-8 and some is latin-1.
+# But if each game entry is processed and auto-detected separately, that should be ok.
+encoding = 'utf-8'
+#encoding = 'latin-1'
 
 def process_game_page(url):
     """Returns description"""
-    dom = scrape.get_page(url, 'latin-1')
+    dom = scrape.get_page(url, encoding)
 
     assert '?game=' in url and len(url.split('=')) == 2, "Expected only one query in page url, 'game'"
     srcid = url.split('=')[1]
 
     game = gamedb.Game()
-    game.name = dom.find('th', class_='thHead').string.encode('utf-8').strip()
+    game.name = dom.find('th', class_='thHead').string.strip() #.encode('utf-8')
     game.url = url
     print ("Processing game:", game.name, "  \tsrcid:", srcid)
 
     author_link = dom.find('span', class_='gen').a
-    game.author = author_link.string.encode('utf-8')
+    game.author = author_link.string
+    #print(type(game.author), len(game.author), game.author[-1])
     # Some games imported from Op:OHR with no authors link to invalid author ID 0
     if not author_link['href'].endswith('&u=0'):
         # Remove leading './' on link
@@ -75,7 +81,7 @@ def process_game_page(url):
 
 def process_index_page(url, limit = 9999):
     print("Fetching/parsing page...")
-    dom = scrape.get_page(url, 'latin-1')
+    dom = scrape.get_page(url, encoding)
 
     container = dom.find('td', width='410')
     for tag in container.find_all('th'):

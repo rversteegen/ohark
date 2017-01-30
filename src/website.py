@@ -23,7 +23,7 @@ print(__file__)
 def encode(obj):
     """Convert to correct format for returning to WSGI server"""
     if py2:
-        return str(obj)
+        return unicode(obj).encode('utf-8')
     return str(obj).encode('utf-8')
 
 def text(obj):
@@ -31,7 +31,10 @@ def text(obj):
     return escape(str(obj)).replace('\n', '<br>\n')
 
 with open(STATIC_ROOT + 'page_template.html', 'r') as temp:
-    PAGE_TEMPLATE = temp.read()
+    if py2:
+        PAGE_TEMPLATE = unicode(temp.read())
+    else:
+        PAGE_TEMPLATE = temp.read()
 
 
 ################################################################################
@@ -71,11 +74,13 @@ def render_gamelist(db):
     ret += "<p>Click the Name to go to the game entry.</p><br/>\n"
     headers = 'key', 'Name', 'Author', 'Link', 'Description'
     table = []
-    for gameid, game in db.games.iteritems():
+    for gameid, game in db.games.items():
+        print(type(game.author), [hex(ord(x)) for x in game.author])
         table.append( [game.name,
                        gameid,
                        util.link('gamelists/%s/%s/' % (db.name, gameid), game.get_name()),
-                       util.link(game.author_link, game.get_author()),
+                       #util.link(game.author_link, game.get_author()),
+                       game.get_author(),
                        util.link(game.url, "External"),
                        util.shorten(game.description, 100),
         ] )
@@ -113,7 +118,7 @@ def templated_static_page(fname, status = '200 OK'):
     """Try to render an .html link by substituting the corresponding .content.html file into
     the global template; otherwise return None."""
     pagename, extn = os.path.splitext(fname)
-    print pagename, os.path.abspath(os.curdir)
+    print(pagename, os.path.abspath(os.curdir))
     if extn == '.html' and os.path.isfile(pagename + '.content.html'):
         with open(pagename + '.content.html', 'r') as temp:
             return render_page(temp.read(), status = status)
@@ -168,7 +173,7 @@ def application(environ, start_response):
     path = environ.get('PATH_INFO', '/').lower().split('/')[1:]
     while '' in path:
         path.remove('')
-    print path
+    print(path)
     if path[0] == "gamelists":
         return handle_gamelists(path)
     else:

@@ -5,6 +5,12 @@ import re
 ################################################################################
 ### Util
 
+py2 = sys.version_info[0] == 2
+if py2:
+    tostr = unicode
+else:
+    tostr = str
+
 def write_log(text):
     global verbose_log
     if mod_python:
@@ -37,7 +43,6 @@ def create_file(path):
 def strip_strings(strings):
     """Given a list of strings, strip them""" # and remove whitespace-only strings"""
     return [x.strip() for x in strings]
-
 
 
 def program_output(*args, **kwargs):

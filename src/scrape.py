@@ -13,8 +13,7 @@ import os.path
 import posixpath
 
 import util
-
-py2 = sys.version_info[0] == 2
+from util import py2, tostr
 
 #print(sys.stdout.encoding, "encoding")
 
@@ -48,6 +47,8 @@ if mod_python:
     from bs4.__init__ import BeautifulSoup, NavigableString
 else:
     from bs4 import BeautifulSoup, NavigableString
+
+import bs4
 
 try:
     import lxml
@@ -164,10 +165,17 @@ def get_url(url, verbose = False, cache = True):
     with open(path, 'rb') as fil:
         return fil.read()
 
+def auto_decode(data, default_encoding = 'utf-8'):
+    try:
+        data = data.decode(default_encoding)
+    except UnicodeDecodeError:
+        data = data.decode('latin-1')
+    return data
+
 def get_page(url, encoding = 'utf-8', cache = True):
     """Download a URL or fetch it from the cache, and return a BS object"""
     data = get_url(url, cache = cache)
-    data = data.decode(encoding)
+    data = auto_decode(data, encoding)
     # Convert non-breaking spaces to spaces
     #data = data.replace(u'\xa0', ' ')
     data = data.replace("&#160;", ' ')
@@ -184,4 +192,31 @@ def get_page(url, encoding = 'utf-8', cache = True):
 
 def tag_contents(tag):
     "Get the html contents of a BS4 tag. Same as just str(tag), but excludes the tag itself"
-    return ''.join(str(piece).strip().encode('utf-8') for piece in tag.contents)
+    # Need to convert tags to str/unicode. Must not call 'str' on
+    # a py2 unicode obj, because that attempts to encode it to ascii.
+    return ''.join(tostr(piece).strip() for piece in tag.contents)
+
+
+def translate(obj):
+    "unfinished: remove all bs4.element.NavigableStrings"
+    print("A")
+    if hasattr(obj, 'items'):
+        for k,v in obj.items():
+            print("dict item")
+            obj[k] = tostr(v)
+            # if type(v) == bs4.element.NavigableString:
+            #     obj[k] = tostr(v)
+    elif hasattr(obj, '__getitem__'):
+        for k,v in enumerate(obj):
+            print("list item")
+            obj[k] = translate(v)
+            # if type(v) == bs4.element.NavigableString:
+            #     print("list item")
+            #     obj[k] = tostr(v)       
+    elif hasattr(obj, '__dict__'):
+        print("recurse")
+        obj.__dict__ = translate(obj.__dict__)
+    elif type(obj) == bs4.element.NavigableString:
+        print("str")
+        obj = tostr(obj)
+    return obj

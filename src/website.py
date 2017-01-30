@@ -94,11 +94,12 @@ def render_gamelist(db):
                        #util.link(game.author_link, game.get_author()),
                        game.get_author(),
                        util.link(game.url, "External"),
-                       util.shorten(scrape.strip_html(game.description), 150),
+                       util.shorten(util.strip_html(game.description), 150),
         ] )
     table.sort()
     # Strip the key
     table = [x[1:] for x in table]
+    # TODO: 80+% of the time is spent in tabulate
     ret += tabulate.tabulate(table, headers, 'html')
     return render_page(ret)
 

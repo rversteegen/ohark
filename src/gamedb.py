@@ -3,9 +3,13 @@
 Should probably use a real DB, but for now we just use a pickled python dict.
 """
 
-import pickle
-import os
 import util
+import os
+
+if util.py2:
+    import cPickle as pickle
+else:
+    import pickle
 
 DB_DIR = os.path.join(os.path.dirname(__file__), 'databases')
 #print(DB_DIR)

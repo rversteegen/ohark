@@ -26,6 +26,14 @@ SOURCES = {
     # "steam",
 
 
+db_cache = {}
+
+def cached_load(source_name):
+    if source_name not in db_cache:
+        db_cache[source_name] = GameList.load(source_name)
+    return db_cache[source_name]
+
+
 class Game:
     """
     A single entry
@@ -91,6 +99,7 @@ class GameList:
         """
         Save to file.
         """
+        db_cache[self.name] = self
         util.mkdir(DB_DIR)
         with open(db_filename(self.name), 'wb') as dbfile:
             pickle.dump(self.games, dbfile, 2)  # protocol 2 for python 2 compat

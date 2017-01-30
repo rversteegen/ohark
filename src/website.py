@@ -55,8 +55,8 @@ def handle_gamelists(path):
     else:
         listname = path[1]
         with util.Timer() as timing:
-            db = gamedb.GameList.load(listname)
-        reqinfo.footer_info += " DB load in %s. " % timing
+            db = gamedb.cached_load(listname)
+        reqinfo.footer_info += " DB load in %.3fs. " % timing.time
         if not db:
             return render_page("Game list %s does not exist." % listname, status = '404 Not Found')
 

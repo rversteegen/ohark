@@ -14,12 +14,12 @@ DB_DIR = os.path.join(os.path.dirname(__file__), 'databases')
 SOURCES = [
     "cp",
     "ss",
-    "bahamut",
-    "opohr",
     "googleplay",
-    "ouya",
-    "steam",
 ]
+    # "bahamut",
+    # "opohr",
+    # "ouya",
+    # "steam",
 
 
 class Game:

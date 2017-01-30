@@ -85,7 +85,7 @@ def process_index_page(url, limit = 9999):
             break
 
 
-process_index_page('http://castleparadox.com/search-gamelist.php?mirror=true')
+process_index_page('http://castleparadox.com/search-gamelist.php?mirror=true', 30)
 
 # process_game_page('http://castleparadox.com/gamelist-display.php?game=488')
 # process_game_page('http://castleparadox.com/gamelist-display.php?game=1040')

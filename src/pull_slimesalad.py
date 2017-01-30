@@ -5,13 +5,17 @@ from datetime import datetime
 import time
 import re
 from bs4 import BeautifulSoup, NavigableString
+import StringIO
 
 import scrape
 import gamedb
 import util
+from slimesalad_gamedump import ChunkReader, GameInfo
 
 db = gamedb.GameList('ss')
 
+def safe_string():
+    "Accessing .string on a bs4 tag with no strign returns None"
 
 def process_game_page(url):
     """Returns description"""
@@ -52,7 +56,7 @@ def process_game_page(url):
         download = ('http://www.slimesalad.com/forum/' + util.remove_sid(tag['href'])[2:],
                     tag.b.string.encode('utf-8'),  # title of the download
                     download_count,
-                    descrip_tag.string.encode('utf-8'))
+                    descrip_tag.string)  #.encode('utf-8'))
         game.downloads.append(download)
 
     # Grab screenshots
@@ -79,14 +83,20 @@ def process_game_page(url):
     db.games[srcid] = game
 
 
-def process_index_page(url):
+def process_index_page(url, limit = 9999):
     print("Fetching/parsing page...")
-    dom = scrape.get_page(url, 'windows-1252')
-    #...
+    page = scrape.get_url(url).decode('windows-1252')
 
-#process_index_page('http://www.slimesalad.com/forum/gamedump.php')
+    file = StringIO.StringIO(page)
+    for chunk in ChunkReader(file).each():
+        game = GameInfo(chunk)
+        process_game_page(game.url)
+        limit -= 1
+        if limit <= 0:
+            break
 
-process_game_page('http://www.slimesalad.com/forum/viewgame.php?t=5419')
+process_index_page('http://www.slimesalad.com/forum/gamedump.php')
 
-print(db.games)
+#process_game_page('http://www.slimesalad.com/forum/viewgame.php?t=5419')
+
 db.save()

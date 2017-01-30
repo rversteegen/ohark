@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# This file is from web/mirror/slimesalad/gamedump.py in the OHRRPGCE
+# SVN repository. Written by James Paige.
+
 url = "http://www.slimesalad.com/forum/gamedump.php"
 mirrordir = "./slimesalad/"
 
@@ -124,7 +127,10 @@ class LocalGameCache(object):
 
     def dest(self, gf):
         filename = os.path.basename(gf.url)
-        return os.path.join(self.dir, filename)
+        folder = gf.game.url.split('?t=')[1]
+        folder = safe_filename(gf.game.name)
+        print folder
+        return os.path.join(self.dir, folder, filename)
 
     def mirror_game(self, game):
         self.download_game_files(game)
@@ -176,7 +182,10 @@ class LocalGameCache(object):
 #######################################################################
 
 def download(url, local_file):
-    print "downloading %s" % (os.path.basename(local_file))
+    folder = os.path.dirname(local_file)
+    print "downloading %s %s" % (os.path.basename(local_file), url)
+    if not os.path.isdir(folder):
+        os.mkdir(folder)
     input = urllib2.urlopen(url)
     output = open(local_file, "wb")
     output.write(input.read())
@@ -197,5 +206,5 @@ def safe_filename(filename):
 
 #######################################################################
 
-local = LocalGameCache(mirrordir)
-dump = GameDumpReader(url, local)
+#local = LocalGameCache(mirrordir)
+#dump = GameDumpReader(url, local)

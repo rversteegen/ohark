@@ -1,6 +1,7 @@
 import sys
 import os
 import re
+import time
 
 ################################################################################
 ### Util
@@ -10,6 +11,46 @@ if py2:
     tostr = unicode
 else:
     tostr = str
+
+
+# A high precision wallclock timer
+if os.name == 'posix':
+    timer = time.time
+else:
+    timer = time.clock
+
+class Timer(object):
+    """
+    Utility class for finding total time spent in multiple sections of code.
+    Is a context manager. Use either like:
+        timing = Timer()
+        with timing:
+            ...
+    or
+        with Timer() as timing:
+            ...
+        print 'Done in', timing
+    """
+    def __init__(self):
+        self.time = 0.
+    def start(self):
+        self._start = timer()
+        return self
+    def stop(self):
+        self.time += timer() - self._start
+        del self._start
+        return self
+    def __enter__(self):
+        self.start()
+        return self
+    def __exit__(self, *args):
+        self.stop()
+    def __str__(self):
+        if hasattr(self, '_start'):
+            #return '<Timer running>'
+            return '%.3gs' % (timer() - self._start)
+        return '%.3gs' % self.time
+
 
 def write_log(text):
     global verbose_log

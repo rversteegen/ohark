@@ -16,9 +16,10 @@ DB_DIR = os.path.join(os.path.dirname(__file__), 'databases')
 
 
 SOURCES = {
-    "cp": {'name': "Castle Paradox"},
-    "ss": {'name': "Slime Salad"},
-    "googleplay": {'name': "Google Play"},
+    "cp": {'name': "Castle Paradox", 'is_gamelist': True},
+    "ss": {'name': "Slime Salad", 'is_gamelist': True},
+    "googleplay": {'name': "Google Play", 'is_gamelist': True},
+    "rpgs": {'name': "Scanned .rpg files", 'is_gamelist': False},
 }
     # "bahamut",
     # "opohr",
@@ -29,6 +30,7 @@ SOURCES = {
 db_cache = {}
 
 def cached_load(source_name):
+    #return GameList.load(source_name)
     if source_name not in db_cache:
         db_cache[source_name] = GameList.load(source_name)
     return db_cache[source_name]
@@ -38,6 +40,11 @@ class Game:
     """
     A single entry
     """
+
+    # FIXME: Adding members to class allows defaults for old serialised Game's
+    # but can't initialise lists here...
+    extra_info = ""         # Info grabbed from .rpg files, currently
+    mtime = None            # Last modification time of the game/game entry
 
     def __init__(self):
         self.name = ""

@@ -6,6 +6,8 @@ serves static files.
 import os.path
 from cgi import parse_qs, escape
 import sys
+import time
+
 import localsite
 #import tabulate
 
@@ -87,23 +89,30 @@ def render_gamelist(db):
     """
     Render a list of games.
     """
+    is_gamelist = gamedb.SOURCES[db.name]['is_gamelist']
     ret = util.link("gamelists/", "Back to gamelists ...") + "\n"
     ret += "<p>Click the Name to go to the game entry.</p>\n"
     ret += "<p>%s games.</p><br/>\n" % len(db.games)
-    headers = 'key', 'Name', 'Author', 'Link', 'Description'
+    if is_gamelist:
+        headers = 'key', 'Name', 'Author', 'Link', 'Description'
+    else:
+        headers = 'File', 'Name', 'Description'
     table = []
     for gameid, game in db.games.items():
         #print(type(game.author), [hex(ord(x)) for x in game.author])
-        table.append( [game.name.lower(),
-                       gameid,
-                       util.link('gamelists/%s/%s/' % (db.name, gameid), game.get_name()),
-                       #util.link(game.author_link, game.get_author()),
-                       game.get_author(),
-                       util.link(game.url, "External"),
-                       util.shorten(util.strip_html(game.description), 150),
-        ] )
+        row = []
+        row.append( game.name.lower() )  # sort key
+        #if is_gamelist:
+        row.append( gameid )           
+        row.append( util.link('gamelists/%s/%s/' % (db.name, gameid), game.get_name()) )
+        if is_gamelist:
+            #util.link(game.author_link, game.get_author())
+            row.append( game.get_author() )
+            row.append( game.url and util.link(game.url, "External") )
+        row.append( util.shorten(util.strip_html(game.description), 150) )
+        table.append(row)
     table.sort()
-    # Strip the key
+    # Strip the sort key
     table = [x[1:] for x in table]
 
     ret += """<table class="game" border="0">\n<tbody>\n"""
@@ -119,16 +128,20 @@ def render_game(listname, gameid, game):
     ret = util.link("gamelists/" + listname + "/", "Back to gamelist ...") + "\n"
     ret += "<h1>%s</h1>" % game.get_name()
     ret += """<table class="game" border="0">\n<tbody>\n"""
-    def add_row(key, val):
-        return '<tr><td class="heading">%s</td><td>%s</td></tr>\n' % (key, val)
+    def add_row(key, val, even_if_empty = False):
+        if val or even_if_empty:
+            return '<tr><td class="heading">%s</td><td>%s</td></tr>\n' % (key, val)
+        return ''
 
     ret += add_row("Author", util.link(game.author_link, game.get_author()))
     ret += add_row("Original entry", util.link(game.url, gameid) + " on " + gamedb.SOURCES[listname]['name'])
     ret += add_row("Description", game.description)
-    ret += add_row("Tags", ", ".join(game.tags))
+    ret += add_row("Tags", game.tags and ", ".join(game.tags))
     ret += add_row("Screenshots", game.screenshots) #"%d downloaded" % (len(game.screenshots),))
-    ret += add_row("Downloads", str(game.downloads))
-    ret += add_row("Reviews", str(game.reviews))
+    ret += add_row("Downloads", game.downloads)
+    ret += add_row("Reviews", game.reviews)
+    ret += add_row("Info", game.extra_info)
+    ret += add_row("Last modified", game.mtime and time.ctime(game.mtime))
 
     ret += "</tbody></table>\n"
     return render_page(ret)

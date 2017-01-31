@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup, NavigableString
 import scrape
 import gamedb
 import util
+from util import py2, tostr
 
 CACHE_INDEX = False
 
@@ -21,23 +22,23 @@ def process_game_page(name, url):
     srcid = url.split('=')[1]
 
     game = gamedb.Game()
-    game.name = str(dom.find('div', class_='id-app-title').string)
+    game.name = tostr(dom.find('div', class_='id-app-title').string)
     game.url = url
     game.downloads = [url]
     print ("Processing game:", game.name, "  \tsrcid:", srcid)
 
     author_div = dom.find('div', itemprop='author')
-    game.author = str(author_div.find(itemprop='name').string)
+    game.author = tostr(author_div.find(itemprop='name').string)
     game.author_link = 'https://play.google.com' + author_div.a['href']
 
     # Grab description
     descrip_tag = dom.find(itemprop='description')
-    game.description = '\n'.join(str(tag) for tag in descrip_tag.div.contents)
+    game.description = '\n'.join(tostr(tag) for tag in descrip_tag.div.contents)
 
     # Categories (only one per game?)
     game.tags = []
     for link in dom.find_all('a', class_='document-subtitle category'):
-        game.tags.append(str(link.span.string))
+        game.tags.append(tostr(link.span.string))
 
     # Grab screenshots
     datadir = "data/googleplay/" + srcid + '/'
@@ -49,6 +50,9 @@ def process_game_page(name, url):
         with open(filename, 'wb') as fil:
             fil.write(data)
         game.screenshots.append(filename)
+
+    # Double-check that there are no NavigableStrings
+    game = scrape.clean_strings(game)
 
     db.games[srcid] = game
 

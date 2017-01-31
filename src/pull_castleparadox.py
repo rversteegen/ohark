@@ -32,7 +32,7 @@ def process_game_page(url):
     print ("Processing game:", game.name, "  \tsrcid:", srcid)
 
     author_link = dom.find('span', class_='gen').a
-    game.author = author_link.string
+    game.author = tostr(author_link.string)
     #print(type(game.author), len(game.author), game.author[-1])
     # Some games imported from Op:OHR with no authors link to invalid author ID 0
     if not author_link['href'].endswith('&u=0'):
@@ -76,6 +76,9 @@ def process_game_page(url):
     for tag in dom.find_all('a', string=re.compile('Review #')):
         game.reviews.append('http://castleparadox.com/' + tag['href'])
 
+    # Double-check that there are no NavigableStrings
+    game = scrape.clean_strings(game)
+
     print(game.__dict__)
     db.games[srcid] = game
 
@@ -94,10 +97,9 @@ def process_index_page(url, limit = 9999):
             break
 
 
-process_index_page('http://castleparadox.com/search-gamelist.php?mirror=true', 300)
+process_index_page('http://castleparadox.com/search-gamelist.php?mirror=true')
 
 #process_game_page('http://castleparadox.com/gamelist-display.php?game=640')   # unicode author name
 # process_game_page('http://castleparadox.com/gamelist-display.php?game=1040')
 
-print(db.games)
 db.save()

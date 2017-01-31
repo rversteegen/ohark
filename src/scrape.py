@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 """
 Provides get_page for downloading a page from the web or grabbing it from
@@ -198,26 +198,38 @@ def tag_contents(tag):
     return ''.join(tostr(piece).strip() for piece in tag.contents)
 
 
-def translate(obj):
-    "unfinished: remove all bs4.element.NavigableStrings"
-    print("A")
+if py2:
+    strtypes = (str, unicode)
+else:
+    strtypes = (str, bytes)
+
+def clean_strings(obj):
+    """Replace all bs4.element.NavigableStrings in an object
+    with regular str/unicode strings.
+    NOTE: modifies object inplace only if mutable; so return value should be used."""
     if hasattr(obj, 'items'):
         for k,v in obj.items():
-            print("dict item")
-            obj[k] = tostr(v)
-            # if type(v) == bs4.element.NavigableString:
-            #     obj[k] = tostr(v)
-    elif hasattr(obj, '__getitem__'):
-        for k,v in enumerate(obj):
-            print("list item")
-            obj[k] = translate(v)
-            # if type(v) == bs4.element.NavigableString:
-            #     print("list item")
-            #     obj[k] = tostr(v)       
-    elif hasattr(obj, '__dict__'):
-        print("recurse")
-        obj.__dict__ = translate(obj.__dict__)
+            #print("dict item %s,%s" % (k,v))
+            obj[k] = clean_strings(v)
     elif type(obj) == bs4.element.NavigableString:
-        print("str")
+        print("NavigableString %s" % obj)
         obj = tostr(obj)
+    elif isinstance(obj, strtypes):
+        return obj  # Avoid infinite loop iterating a string
+    elif hasattr(obj, '__setitem__'):
+        for k,v in enumerate(obj):
+            #print("list item %s,%s" % (k,v))
+            obj[k] = clean_strings(v)
+    elif hasattr(obj, '__getitem__'):
+        ret = []
+        for k,v in enumerate(obj):
+            #print("list item %s,%s" % (k,v))
+            ret.append(clean_strings(v))
+        obj = tuple(ret)
+    elif hasattr(obj, '__dict__'):
+        #print("recurse into %s.__dict__" % obj)
+        obj.__dict__ = clean_strings(obj.__dict__)
     return obj
+
+
+#clean_strings({'a':'3'})

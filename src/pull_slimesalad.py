@@ -10,6 +10,7 @@ import StringIO
 import scrape
 import gamedb
 import util
+from util import py2, tostr
 from slimesalad_gamedump import ChunkReader, GameInfo
 
 db = gamedb.GameList('ss')
@@ -30,12 +31,12 @@ def process_game_page(url):
 
 
     game = gamedb.Game()
-    game.name = dom.find(class_='title').string.encode('utf-8')
+    game.name = tostr(dom.find(class_='title').string)
     game.url = url
     print ("Processing game:", game.name, "  \tsrcid:", srcid)
 
     author_box = dom.find(class_='gameauthor')
-    game.author = author_box.find(class_='title').string.encode('utf-8')
+    game.author = tostr(author_box.find(class_='title').string)
     game.author_link = 'http://www.slimesalad.com/forum/' + util.remove_sid(author_box.a['href'])
 
     # Grab description
@@ -54,9 +55,9 @@ def process_game_page(url):
         download_count = int(info.split()[-2])
         # strip leading ./ from link
         download = ('http://www.slimesalad.com/forum/' + util.remove_sid(tag['href'])[2:],
-                    tag.b.string.encode('utf-8'),  # title of the download
+                    tostr(tag.b.string),  # title of the download
                     download_count,
-                    descrip_tag.string)  #.encode('utf-8'))
+                    tostr(descrip_tag.string))
         game.downloads.append(download)
 
     # Grab screenshots
@@ -77,7 +78,10 @@ def process_game_page(url):
 
     # Tags
     for tag in dom.find_all(attrs = {'data-tag': True}):
-        game.tags.append(str(tag.a.string))
+        game.tags.append(tostr(tag.a.string))
+
+    # Double-check that there are no NavigableStrings
+    game = scrape.clean_strings(game)
 
     print(game.__dict__)
     db.games[srcid] = game

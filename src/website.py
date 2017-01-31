@@ -1,20 +1,21 @@
 import os.path
 from cgi import parse_qs, escape
 import sys
+import localsite
 import tabulate
 
 import util
 import gamedb
-import scrape
 
 py2 = sys.version_info[0] == 2
 
 # mod_python_wsgi doesn't really set the path variables so that it's
 # possible to see where we are...
 # Where the static files are on the server
-STATIC_ROOT = './' #'/home/teeemcee/web'
+#STATIC_ROOT = '/home/teeemcee/ohr/ohr_archive/web/'
+STATIC_ROOT = '../web/' #os.path.abspath(os.curdir) + '../web/'
 # <base> tag, relative URLs according to this
-URL_ROOTPATH = '/'  #'/ohr/ark/'
+URL_ROOTPATH = '/ohr-archive/'  #'/ohr/ark/'
 
 #SRC_DIR = '../src/'
 
@@ -144,9 +145,9 @@ def notfound(path):
     return (templated_static_page('404.html', status = '404 Not Found')
             or render_page("Not found.", status = '404 Not Found'))   # fallback
 
-def static_serve(environ, start_response):
+def static_serve(path, environ, start_response):
     """Handles static file requests. Only needed when using wsgiref.simple_server"""
-    fname = STATIC_ROOT + environ['PATH_INFO']
+    fname = STATIC_ROOT + '/'.join(path)
     file_wrapper = environ['wsgi.file_wrapper']
 
     def send_file(fname):
@@ -174,7 +175,17 @@ def application(environ, start_response):
     global reqinfo
     reqinfo = RequestInfo(start_response)
 
-    ret = static_serve(environ, start_response)
+    path = environ.get('PATH_INFO', '/').lower()
+    if path.startswith(URL_ROOTPATH):
+        path = path[len(URL_ROOTPATH):]
+    path = path.split('/')
+    while '' in path:
+        path.remove('')
+    print(path)
+
+    #return render_page(text(environ))
+
+    ret = static_serve(path, environ, start_response)
     if ret:
         return ret
 
@@ -186,10 +197,6 @@ def application(environ, start_response):
 
     # Figure out what to delegate to
 
-    path = environ.get('PATH_INFO', '/').lower().split('/')[1:]
-    while '' in path:
-        path.remove('')
-    print(path)
     if path[0] == "gamelists":
         return handle_gamelists(path)
     else:

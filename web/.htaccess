@@ -1,6 +1,16 @@
-SetHandler mod_python
-PythonPath "sys.path+['/home/teeemcee/ohr/ohr_archive/src']"
-PythonOption wsgi.application website::application
-PythonHandler mod_python_wsgi
+#### Uncomment following to use mod_python
+# SetHandler mod_python
+# PythonPath "sys.path+['/home/teeemcee/ohr/ohr_archive/src']"
+# PythonOption wsgi.application website::application
+# PythonHandler mod_python_wsgi
 
 
+#### Attempt at using mod_fcgid instead
+Options +ExecCGI
+SetHandler fcgid-script
+# This can't be used in .htaccess
+#FcgidCmdOptions /home/teeemcee/ohr/ohr_archive/src/flupserve.py MaxProcesses 1
+
+
+
+# 

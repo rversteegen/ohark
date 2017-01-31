@@ -33,6 +33,7 @@ else:
 
 try:
     from mod_python import apache
+    import mod_python
 except:
     mod_python = False
 

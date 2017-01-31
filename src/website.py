@@ -1,8 +1,13 @@
+"""
+This is the implementation of the frontend. It generates all webpages, and also
+serves static files.
+"""
+
 import os.path
 from cgi import parse_qs, escape
 import sys
 import localsite
-import tabulate
+#import tabulate
 
 import util
 import gamedb
@@ -100,8 +105,14 @@ def render_gamelist(db):
     table.sort()
     # Strip the key
     table = [x[1:] for x in table]
-    # TODO: 80+% of the time is spent in tabulate
-    ret += tabulate.tabulate(table, headers, 'html')
+
+    ret += """<table class="game" border="0">\n<tbody>\n"""
+    ret += "<tr>" + "".join("<th>%s</th>" % title for title in headers) + "</tr>\n"
+    lines = []
+    for row in table:
+        lines.append("<tr>" + "".join("<td>%s</td>" % item for item in row) + "</tr>\n")
+    ret += "".join(lines)
+    ret += "</tbody></table>\n"
     return render_page(ret)
 
 def render_game(listname, gameid, game):

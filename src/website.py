@@ -134,7 +134,10 @@ def render_game(listname, gameid, game):
         return ''
 
     ret += add_row("Author", util.link(game.author_link, game.get_author()))
-    ret += add_row("Original entry", util.link(game.url, gameid) + " on " + gamedb.SOURCES[listname]['name'])
+    if game.url:
+        ret += add_row("Original entry", util.link(game.url, gameid) + " on " + gamedb.SOURCES[listname]['name'])
+    else:
+        ret += add_row("Origin/ID", gameid)
     ret += add_row("Description", game.description)
     ret += add_row("Tags", game.tags and ", ".join(game.tags))
     ret += add_row("Screenshots", game.screenshots) #"%d downloaded" % (len(game.screenshots),))

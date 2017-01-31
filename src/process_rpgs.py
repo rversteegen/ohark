@@ -12,7 +12,7 @@ import time
 import numpy as np
 import localsite
 from nohrio.ohrrpgce import *
-from rpgbatch import RPGIterator, RPGInfo, lumpbasename
+from rpgbatch import RPGIterator, RPGInfo
 from rpg_const import *
 
 import gamedb
@@ -27,8 +27,7 @@ def process_sources(db_name, sources):
     rpgs = RPGIterator(sources)
     for rpg, gameinfo, zipinfo in rpgs:
         #lumplist = [(lumpbasename(name, rpg), os.stat(name).st_size) for name in rpg.manifest]
-
-        gameid = (gameinfo.src + '-' + gameinfo.id.replace('/', '-')).lower()
+        gameid = (gameinfo.src + ': ' + gameinfo.id.replace('/', '-')).lower()
 
         print "Processing RPG ", gameinfo.id, "as", gameid
         print " > ", gameinfo.longname, " --- ", gameinfo.aboutline
@@ -37,11 +36,23 @@ def process_sources(db_name, sources):
         game.name = gameinfo.longname.decode('latin-1')
         game.description = gameinfo.aboutline.decode('latin-1')
 
+        if gameinfo.rpgfile.lower().endswith('.rpgdir'):
+            size = sum(os.stat(name).st_size for name in rpg.manifest)
+        else:
+            size = gameinfo.size
+
         # Get info
         gen = rpg.general.view(np.int16)
         info = [
+            "Filename: " + gameinfo.rpgfile,
+            "Size: %d KB" % (size / 1024),
             ".rpg version: %d" % gen[genVersion],
             "Num maps: %d" % (gen[genMaxMap] + 1),
+            "Num textboxes: %d" % (gen[genMaxTextbox] + 1),
+            "Num formations: %d" % (gen[genMaxFormation] + 1),
+            "Num backdrops: %d" % gen[genNumBackdrops],
+            "Num scripts: %d" % gen[genNumPlotscripts],
+            "Num songs: %d" % (gen[genMaxSong] + 1),
             "Battle mode: %s" % ({0:"Active-battle", 1:"Turn-based"}.get(gen[genBattleMode], "UNKNOWN!")),
             "Resolution: %dx%d" % (gen[genResolutionX] or 320, gen[genResolutionY] or 200),
             "Frame rate: %.1fFPS" % (1000. / (gen[genMillisecPerFrame] or 55)),

@@ -6,8 +6,8 @@
 
 
 #### Attempt at using mod_fcgid instead
-Options +ExecCGI
-SetHandler fcgid-script
+#Options +ExecCGI
+#SetHandler fcgid-script
 # This can't be used in .htaccess
 #FcgidCmdOptions /home/teeemcee/ohr/ohr_archive/src/flupserve.py MaxProcesses 1
 

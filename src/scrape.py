@@ -24,10 +24,10 @@ from util import py2, tostr
 
 if py2:
     from urlparse import urlparse, urljoin
-    from urllib import urlretrieve
+    from urllib import urlretrieve, quote, unquote
     from urllib2 import urlopen, HTTPError
 else:
-    from urllib.parse import urlparse, urljoin
+    from urllib.parse import urlparse, urljoin, quote, unquote
     from urllib.request import urlopen, urlretrieve
     from urllib.error import HTTPError
 

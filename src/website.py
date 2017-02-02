@@ -86,14 +86,16 @@ def render_gamelists():
             continue
         ret += '<li> <a href="gamelists/%s">%s</a> </li>\n' % (src, info['name'])
     ret += '</ul>'
-    return render_page(ret)
+    return render_page(ret, 'OHR Archive - Gamelists')
 
 def render_gamelist(db):
     """
     Render a list of games.
     """
-    is_gamelist = gamedb.SOURCES[db.name]['is_gamelist']
+    dbinfo = gamedb.SOURCES[db.name]
+    is_gamelist = dbinfo['is_gamelist']
     ret = util.link("gamelists/", "Back to gamelists ...") + "\n"
+    ret += "<h1>Gamelist: %s</h1>" % dbinfo['name']
     ret += "<p>Click the Name to go to the game entry.</p>\n"
     ret += "<p>%s games.</p><br/>\n" % len(db.games)
     if is_gamelist:
@@ -125,7 +127,7 @@ def render_gamelist(db):
         lines.append("<tr>" + "".join("<td>%s</td>" % item for item in row) + "</tr>\n")
     ret += "".join(lines)
     ret += "</tbody></table>\n"
-    return render_page(ret)
+    return render_page(ret, 'OHR Archive - ' + dbinfo['name'])
 
 def render_game(listname, gameid, game):
     ret = util.link("gamelists/" + listname + "/", "Back to gamelist ...") + "\n"
@@ -150,7 +152,7 @@ def render_game(listname, gameid, game):
     ret += add_row("Last modified", game.mtime and time.ctime(game.mtime))
 
     ret += "</tbody></table>\n"
-    return render_page(ret)
+    return render_page(ret, 'OHR Archive - ' + game.name)
 
 ################################################################################
 

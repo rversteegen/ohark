@@ -2,7 +2,7 @@
 
 """
 Provides get_page for downloading a page from the web or grabbing it from
-a local cache.
+a local cache, and some utility routines useful for crawling or scraping webpages.
 """
 
 from __future__ import print_function
@@ -23,11 +23,11 @@ from util import py2, tostr
 #     sys.stdout = codecs.getwriter('utf-8')(sys.stdout)
 
 if py2:
-    from urlparse import urlparse
+    from urlparse import urlparse, urljoin
     from urllib import urlretrieve
     from urllib2 import urlopen, HTTPError
 else:
-    from urllib.parse import urlparse #, urljoin
+    from urllib.parse import urlparse, urljoin
     from urllib.request import urlopen, urlretrieve
     from urllib.error import HTTPError
 
@@ -42,9 +42,6 @@ if mod_python:
     thisdir = os.path.split(__file__)[0]
     sys.path.append(os.path.abspath(thisdir))
 
-    # from mod_python import apache
-    #             mod = apache.import_module('~/../src/car-parts-scraper/web_interface.py')
-
     from bs4.__init__ import BeautifulSoup, NavigableString
 else:
     from bs4 import BeautifulSoup, NavigableString
@@ -57,7 +54,7 @@ try:
 except ImportError:
     # html.parser is less lenient
     #parse_lib = "html5lib"
-    # To support python 2.6, can't use html.parser which isn't lenient enough
+    # To support python 2.6, can't use html.parser which isn't lenient enough in python 2.6
     parse_lib = "html.parser"
 
 
@@ -74,8 +71,6 @@ class TooManyRequests(Exception):
 ################################################################################
 ### URLs and page fetching
 
-
-urljoin = posixpath.join
 
 def joinurl(base_url, path):
     parsed = urlparse(base_url)
@@ -174,7 +169,7 @@ def auto_decode(data, default_encoding = 'utf-8'):
     return data
 
 def get_page(url, encoding = 'utf-8', cache = True):
-    """Download a URL or fetch it from the cache, and return a BS object"""
+    """Download a URL of an HTML page or fetch it from the cache, and return a BS object"""
     data = get_url(url, cache = cache)
     data = auto_decode(data, encoding)
     # Convert non-breaking spaces to spaces

@@ -79,8 +79,11 @@ def handle_gamelists(path):
 ################################################################################
 
 def render_gamelists():
-    ret = "The following gamelists have been imported:\n<ul>"
-    for src, info in gamedb.SOURCES.iteritems():
+    ret = "<h1>Archived Gamelists</h1>\n"
+    ret += "The following gamelists have been imported:\n<ul>"
+    for src, info in sorted(gamedb.SOURCES.items()):
+        if info.get('hidden', False):
+            continue
         ret += '<li> <a href="gamelists/%s">%s</a> </li>\n' % (src, info['name'])
     ret += '</ul>'
     return render_page(ret)

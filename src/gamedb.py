@@ -17,6 +17,7 @@ DB_DIR = os.path.join(os.path.dirname(__file__), 'databases')
 
 SOURCES = {
     "cp": {'name': "Castle Paradox", 'is_gamelist': True},
+    "cpbkup": {'name': "Castle Paradox backup", 'is_gamelist': True, 'hidden': True},
     "ss": {'name': "Slime Salad", 'is_gamelist': True},
     "googleplay": {'name': "Google Play", 'is_gamelist': True},
     "rpgs": {'name': "Scanned .rpg files", 'is_gamelist': False},

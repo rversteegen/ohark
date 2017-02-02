@@ -16,6 +16,3 @@ print("Serving HTTP on port 8007...")
 
 # Respond to requests until process is killed
 httpd.serve_forever()
-
-# Alternative: serve one request, then exit
-httpd.handle_request()

@@ -75,11 +75,9 @@ def process_sources(db_name, sources):
             info.append("Script files: " + str(zipinfo.scripts))
         game.extra_info = "\n".join(info)
 
-
         db.games[gameid] = game
 
     rpgs.print_summary()
-    del rpgs
 
     db.save()
 

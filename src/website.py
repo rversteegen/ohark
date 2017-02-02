@@ -80,6 +80,9 @@ def handle_gamelists(path):
 ################################################################################
 
 def render_gamelists():
+    """
+    Generate the gamelists/ page
+    """
     ret = "<h1>Archived Gamelists</h1>\n"
     ret += "The following gamelists have been imported:\n<ul>"
     for src, info in sorted(gamedb.SOURCES.items()):
@@ -87,11 +90,11 @@ def render_gamelists():
             continue
         ret += '<li> <a href="gamelists/%s">%s</a> </li>\n' % (src, info['name'])
     ret += '</ul>'
-    return render_page(ret, 'OHR Archive - Gamelists')
+    return render_page(ret, title = 'OHR Archive - Gamelists')
 
 def render_gamelist(db):
     """
-    Render a list of games.
+    Generate one of the gamelists/X/ pages.
     """
     dbinfo = gamedb.SOURCES[db.name]
     is_gamelist = dbinfo['is_gamelist']
@@ -99,6 +102,8 @@ def render_gamelist(db):
     ret += "<h1>Gamelist: %s</h1>" % dbinfo['name']
     ret += "<p>Click the Name to go to the game entry.</p>\n"
     ret += "<p>%s games.</p><br/>\n" % len(db.games)
+
+    # Generate a table as a list-of-lists, so it can be sorted
     if is_gamelist:
         headers = 'key', 'Name', 'Author', 'Link', 'Description'
     else:
@@ -129,9 +134,12 @@ def render_gamelist(db):
         lines.append("<tr>" + "".join("<td>%s</td>" % item for item in row) + "</tr>\n")
     ret += "".join(lines)
     ret += "</tbody></table>\n"
-    return render_page(ret, 'OHR Archive - ' + dbinfo['name'])
+    return render_page(ret, title = 'OHR Archive - ' + dbinfo['name'])
 
 def render_game(listname, gameid, game):
+    """
+    Generates a gamelists/X/Y/ page for a single game entry
+    """
     ret = util.link("gamelists/" + listname + "/", "Back to gamelist ...") + "\n"
     ret += "<h1>%s</h1>" % game.get_name()
     ret += """<table class="game" border="0">\n<tbody>\n"""
@@ -157,11 +165,14 @@ def render_game(listname, gameid, game):
     ret += add_row("Last modified", game.mtime and time.ctime(game.mtime))
 
     ret += "</tbody></table>\n"
-    return render_page(ret, 'OHR Archive - ' + game.name)
+    return render_page(ret, title = 'OHR Archive - ' + game.name)
 
 ################################################################################
 
 def render_page(content, title = 'OHR Archive', status = '200 OK'):
+    """
+    Put the content of a dynamic page in the generic template, and return it to the WGSI server.
+    """
     reqinfo.set_header(status, [('Content-Type', 'text/html')])
     reqinfo.footer_info += " Page rendered in %.3fs." % (util.timer() - reqinfo.start)
     return [encode(PAGE_TEMPLATE.format(
@@ -183,7 +194,8 @@ def notfound(path):
             or render_page("Not found.", status = '404 Not Found'))   # fallback
 
 def static_serve(path, environ, start_response):
-    """Handles static file requests. Only needed when using wsgiref.simple_server"""
+    """Handles static file requests, and also templated static pages.
+    Only needed when using wsgiref.simple_server"""
     fname = STATIC_ROOT + '/'.join(path)
     file_wrapper = environ['wsgi.file_wrapper']
 
@@ -209,6 +221,9 @@ def static_serve(path, environ, start_response):
         return ret
 
 def application(environ, start_response):
+    """
+    WGSI main entry point for the web app.
+    """
     global reqinfo
     reqinfo = RequestInfo(start_response)
 
@@ -222,21 +237,20 @@ def application(environ, start_response):
 
     #return render_page(text(environ))
 
+    # Handle static files and templated static pages
     ret = static_serve(path, environ, start_response)
     if ret:
         return ret
 
+    # Query string... not used
     parameters = parse_qs(environ.get('QUERY_STRING', ''))
-    print(parameters)
+    #print(parameters)
     param = ''
     if 'param' in parameters:
         param = escape(parameters['param'][0])
 
-    # Figure out what to delegate to
-
+    # Handle dynamic pages
     if path[0] == "gamelists":
         return handle_gamelists(path)
     else:
         return notfound(path)
-
-    #return render_page(text(environ))

@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
 """
-Should probably use a real DB, but for now we just use a pickled python dict.
+Should probably use a real DB, but for now we just use a pickled python object.
 """
 
 import util
@@ -57,9 +56,6 @@ class Game:
         self.tags = []               # List of tags (strings)
         #self.rpg_location           # Gives the path to the .rpg/rpgdir file inside the .zip, in case there is more than one
 
-    # def __str__(self):
-    #     return self.name
-
     def get_name(self):
         return self.name or "(blank name)"
 
@@ -89,7 +85,7 @@ class GameList:
     @classmethod
     def load(cls, source_name):
         """
-        Loads from saved database with the given name if already exists, otherwise creates a blank one.
+        Loads from saved database with the given name if already exists, otherwise returns None.
         """
         ret = cls(source_name)
         fname = db_filename(source_name)

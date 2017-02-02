@@ -1,18 +1,18 @@
 """
 Should probably use a real DB, but for now we just use a pickled python object.
 """
+import os
+import ctypes
 
 import util
-import os
+from util import py2
 
-if util.py2:
+if py2:
     import cPickle as pickle
 else:
     import pickle
 
 DB_DIR = os.path.join(os.path.dirname(__file__), 'databases')
-#print(DB_DIR)
-
 
 SOURCES = {
     "cp": {'name': "Castle Paradox", 'is_gamelist': True},
@@ -25,6 +25,36 @@ SOURCES = {
     # "opohr",
     # "ouya",
     # "steam",
+
+if py2:
+    bytesstr = str
+    unistr = unicode
+else:
+    bytesstr = bytes
+    unistr = str
+
+class BinData(object):
+    """
+    Contains an 8-bit string (str/bytes) which is interpreted as binary data.
+    The main purpose of this class is to allow pickling data with python 2 and loading it
+    with python 3 (which by default would try to decode 8-bit str's to unicode str's).
+    (Alternative to pickling numpy arrays.)
+    """
+    def __init__(self, val):
+        self.val = val
+
+    def __getstate__(self):
+        return self.val  # Not returning self.__dict__ probably also makes the pickling faster/more compact
+
+    def __setstate__(self, val):
+        if type(val) == unistr:
+            self.val = val.encode('latin-1')
+        else:
+            self.val = val
+
+    def as_array(self, ctype = ctypes.c_short):
+        """Create a ctypes array from a string/bytes object with given type."""
+        return util.array_from_string(self.val, ctype)
 
 
 db_cache = {}
@@ -92,7 +122,14 @@ class GameList:
         if os.path.isfile(fname):
             with open(fname, 'rb') as dbfile:
                 print("Loading " + fname)
-                ret.games = pickle.load(dbfile)
+                if py2:
+                    ret.games = pickle.load(dbfile)
+                else:
+                    # When loading a DB pickled by Python 2, str becomes bytes and is decoded to a (unicode) str.
+                    # Use encoding='latin-1' so that no error is thrown in the case of BinData contents,
+                    # which BinData.__setstate__ then converts back to bytes.
+                    # Can't use encoding='bytes' because then all dict keys become bytes!!
+                    ret.games = pickle.load(dbfile, encoding='latin-1')
                 ret.mtime = os.stat(fname).st_mtime
                 return ret
 

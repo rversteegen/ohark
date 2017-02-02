@@ -2,6 +2,7 @@ import sys
 import os
 import re
 import time
+import ctypes
 
 ################################################################################
 ### Util
@@ -128,3 +129,7 @@ def shorten(text, maxlen):
     if len(text) > maxlen - 3:
         return text[:maxlen - 3] + "..."
     return text
+
+def array_from_string(string, ctype = ctypes.c_short):
+    """Create a ctypes array from a string/bytes object with given type."""
+    return ctypes.cast(ctypes.create_string_buffer(string), ctypes.POINTER(ctype))

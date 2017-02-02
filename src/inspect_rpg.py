@@ -2,13 +2,8 @@
 Routines for reading information out of game data
 """
 
-import ctypes
 from util import py2
 from rpg_const import *
-
-def array_from_string(string, ctype = ctypes.c_short):
-    """Create a ctypes array from a string/bytes object with given type."""
-    return ctypes.cast(ctypes.create_string_buffer(string), ctypes.POINTER(ctype))
 
 
 # Description of each genVersion value
@@ -42,7 +37,7 @@ def get_gen_info(game):
     Return a string telling some information extracted from the .gen lump,
     given a gamedb.Game object.
     """
-    gen = array_from_string(game.gen)
+    gen = game.gen.as_array()
 
     battle_mode = ({0:"Active-battle", 1:"Turn-based"}
                    .get(gen[genBattleMode], "UNKNOWN! (%d)" % gen[genBattleMode]))

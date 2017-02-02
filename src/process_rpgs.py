@@ -14,6 +14,7 @@ import localsite
 import nohrio.ohrrpgce
 from rpgbatch import RPGIterator, RPGInfo
 import scrape
+from gamedb import BinData
 
 import gamedb
 
@@ -29,7 +30,7 @@ def process_sources(db_name, sources):
         #lumplist = [(lumpbasename(name, rpg), os.stat(name).st_size) for name in rpg.manifest]
         # The filenames of .zips from Op:OHR contain URL %xx escape codes, need to remove
         # to get a gameid that can be part of a valid URL.
-        gameid = (gameinfo.src + ': ' + scrape.unquote(gameinfo.id).replace('/', '-')).lower()
+        gameid = (gameinfo.src + ': ' + scrape.unquote(gameinfo.id).replace('/', '-')).lower().decode('latin-1')
 
         print "Processing RPG ", gameinfo.id, "as", gameid
         print " > ", gameinfo.longname, " --- ", gameinfo.aboutline
@@ -54,7 +55,7 @@ def process_sources(db_name, sources):
 
         if rpg.has_lump('fixbits.bin'):
             with open(rpg.lump_path('fixbits.bin')) as f:
-                game.fixbits = f.read()
+                game.fixbits = BinData(f.read())
             fixBits = nohrio.ohrrpgce.fixBits(rpg.lump_path('fixbits.bin'))
         else:
             game.fixbits = None
@@ -63,7 +64,7 @@ def process_sources(db_name, sources):
         if not fixBits or not fixBits.wipegen:
             # In old .rpg files, gen contains garbage; this fixbit indicates if it's been cleaned
             gen[199:] = 0
-        game.gen = gen.tostring()
+        game.gen = BinData(gen.tostring())
             
         info = [
             "Filename: " + gameinfo.rpgfile,

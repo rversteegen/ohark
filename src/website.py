@@ -105,6 +105,7 @@ def render_gamelist(db):
         headers = 'File', 'Name', 'Description'
     table = []
     for gameid, game in db.games.items():
+        gameid = gameid.decode('latin-1')  # temporary workaround
         #print(type(game.author), [hex(ord(x)) for x in game.author])
         row = []
         row.append( game.name.lower() )  # sort key

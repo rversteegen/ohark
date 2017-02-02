@@ -11,9 +11,8 @@ import sys
 import time
 import numpy as np
 import localsite
-from nohrio.ohrrpgce import *
+import nohrio.ohrrpgce
 from rpgbatch import RPGIterator, RPGInfo
-from rpg_const import *
 import scrape
 
 import gamedb
@@ -36,38 +35,46 @@ def process_sources(db_name, sources):
         print " > ", gameinfo.longname, " --- ", gameinfo.aboutline
 
         game = gamedb.Game()
-        game.name = gameinfo.longname.decode('latin-1')
+        game.name = gameinfo.longname
         if not game.name:
             game.name = gameinfo.rpgfile
+        game.name = game.name.decode('latin-1')
         game.description = gameinfo.aboutline.decode('latin-1')
 
         if gameinfo.rpgfile.lower().endswith('.rpgdir'):
-            size = sum(os.stat(name).st_size for name in rpg.manifest)
+            game.size = sum(os.stat(name).st_size for name in rpg.manifest)
         else:
-            size = gameinfo.size
+            game.size = gameinfo.size
+        game.mtime = gameinfo.mtime
 
-        # Get info
-        gen = rpg.general.view(np.int16)
+        # Read some data out of the .rpg file, including .gen and fixbits lumps,
+        # and put some info into 
+
+        gen = rpg.general.view(np.int16).copy()
+
+        if rpg.has_lump('fixbits.bin'):
+            with open(rpg.lump_path('fixbits.bin')) as f:
+                game.fixbits = f.read()
+            fixBits = nohrio.ohrrpgce.fixBits(rpg.lump_path('fixbits.bin'))
+        else:
+            game.fixbits = None
+            fixBits = None
+
+        if not fixBits or not fixBits.wipegen:
+            # In old .rpg files, gen contains garbage; this fixbit indicates if it's been cleaned
+            gen[199:] = 0
+        game.gen = gen.tostring()
+            
         info = [
             "Filename: " + gameinfo.rpgfile,
-            "Size: %d KB" % (size / 1024),
-            ".rpg version: %d" % gen[genVersion],
-            "Num maps: %d" % (gen[genMaxMap] + 1),
-            "Num textboxes: %d" % (gen[genMaxTextbox] + 1),
-            "Num formations: %d" % (gen[genMaxFormation] + 1),
-            "Num backdrops: %d" % gen[genNumBackdrops],
-            "Num scripts: %d" % gen[genNumPlotscripts],
-            "Num songs: %d" % (gen[genMaxSong] + 1),
-            "Battle mode: %s" % ({0:"Active-battle", 1:"Turn-based"}.get(gen[genBattleMode], "UNKNOWN!")),
-            "Resolution: %dx%d" % (gen[genResolutionX] or 320, gen[genResolutionY] or 200),
-            "Frame rate: %.1fFPS" % (1000. / (gen[genMillisecPerFrame] or 55)),
+            "Size: %d KB" % (game.size / 1024),
             "Created by: " + rpg.archinym.version,
             "archinym: " + rpg.archinym.prefix,
         ]
         if zipinfo and len(zipinfo.scripts):
             info.append("Script files: " + str(zipinfo.scripts))
-        game.extra_info = "<br/>".join(info)
-        game.mtime = gameinfo.mtime
+        game.extra_info = "\n".join(info)
+
 
         db.games[gameid] = game
 

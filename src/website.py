@@ -13,6 +13,7 @@ import localsite
 
 import util
 import gamedb
+import inspect_rpg
 
 py2 = sys.version_info[0] == 2
 
@@ -63,7 +64,7 @@ def handle_gamelists(path):
     else:
         listname = path[1]
         with util.Timer() as timing:
-            db = gamedb.cached_load(listname)
+            db = gamedb.GameList.cached_load(listname)
         reqinfo.footer_info += " DB load in %.3fs. " % timing.time
         if not db:
             return render_page("Game list %s does not exist." % listname, status = '404 Not Found')
@@ -148,7 +149,10 @@ def render_game(listname, gameid, game):
     ret += add_row("Screenshots", game.screenshots) #"%d downloaded" % (len(game.screenshots),))
     ret += add_row("Downloads", game.downloads)
     ret += add_row("Reviews", game.reviews)
-    ret += add_row("Info", game.extra_info)
+    info = game.extra_info
+    if game.gen:
+        info += "\n" + inspect_rpg.get_gen_info(game)
+    ret += add_row("Info", text(info))
     ret += add_row("Last modified", game.mtime and time.ctime(game.mtime))
 
     ret += "</tbody></table>\n"

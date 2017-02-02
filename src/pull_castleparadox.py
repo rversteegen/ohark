@@ -8,11 +8,10 @@ import re
 from bs4 import BeautifulSoup, NavigableString
 
 import scrape
+from scrape import urljoin
 import gamedb
 import util
 from util import py2, tostr
-
-db = gamedb.GameList('cp')
 
 # Unfortunately some text is utf-8 and some is latin-1.
 # But if each game entry is processed and auto-detected separately, that should be ok.
@@ -36,8 +35,7 @@ def process_game_page(url):
     #print(type(game.author), len(game.author), game.author[-1])
     # Some games imported from Op:OHR with no authors link to invalid author ID 0
     if not author_link['href'].endswith('&u=0'):
-        # Remove leading './' on link
-        game.author_link = 'http://castleparadox.com/' + author_link['href'][2:]
+        game.author_link = urljoin(url, author_link['href'])
 
     # Grab description
     descrip_tag = dom.find(id='description').find('span', class_='gen')
@@ -49,7 +47,7 @@ def process_game_page(url):
     # Download optional
     download_link = dom.find('a', string=re.compile('Download: '))
     if download_link:
-        game.downloads = [ 'http://castleparadox.com/' + download_link['href'] ]
+        game.downloads = urljoin(url, download_link['href'])
 
     # Grab download count and rating
     download_count = dom.find_all(string=re.compile('Download count: '))[0]
@@ -62,10 +60,11 @@ def process_game_page(url):
     # Grab screenshot
     img_tag = dom.find('img', class_='zoomable')
     if img_tag:
-        datadir = 'data/cp/' + srcid + '/'
+        datadir = 'data/%s/%s/' % (db.name, srcid)
         util.mkdir(datadir)
 
-        data = scrape.get_url('http://castleparadox.com/' + img_tag['src'])
+        data = scrape.get_url(urljoin(url, img_tag['src']))
+
         filename = datadir + img_tag['src'].split('/')[-1]
         with open(filename, 'wb') as fil:
             fil.write(data)
@@ -74,7 +73,7 @@ def process_game_page(url):
     # Reviews
     game.reviews = []
     for tag in dom.find_all('a', string=re.compile('Review #')):
-        game.reviews.append('http://castleparadox.com/' + tag['href'])
+        game.reviews.append(urljoin(url, tag['href']))
 
     # Double-check that there are no NavigableStrings
     game = scrape.clean_strings(game)
@@ -89,17 +88,29 @@ def process_index_page(url, limit = 9999):
     container = dom.find('td', width='410')
     for tag in container.find_all('th'):
         # The first <a> is the link to the game, the second is the author
-        url = 'http://castleparadox.com/' + util.remove_sid(tag.a['href'])
-        process_game_page(url)
+        gameurl = scrape.urljoin(url, util.remove_sid(tag.a['href']))
+        process_game_page(gameurl)
         #time.sleep(0.1)
         limit -= 1
         if limit <= 0:
             break
 
 
-process_index_page('http://castleparadox.com/search-gamelist.php?mirror=true')
+scrape.TooManyRequests.remaining_allowed = 3000  # Override this safety-check
+if True:
+    db = gamedb.GameList('cp')
 
-#process_game_page('http://castleparadox.com/gamelist-display.php?game=640')   # unicode author name
-# process_game_page('http://castleparadox.com/gamelist-display.php?game=1040')
+    process_index_page('http://castleparadox.com/search-gamelist.php?mirror=true')
+
+    #process_game_page('http://castleparadox.com/gamelist-display.php?game=640')   # unicode author name
+    #process_game_page('http://castleparadox.com/gamelist-display.php?game=1040')
+else:
+    # Or browse the backup
+    db = gamedb.GameList('cpbkup')
+
+    process_index_page('http://mirror.motherhamster.org/cp/castleparadox.com/search-gamelist.html')
+
+    #process_game_page('http://mirror.motherhamster.org/cp/castleparadox.com/gamelist-display.html?game=963')
+
 
 db.save()

@@ -9,7 +9,7 @@ mirrordir = "./slimesalad/"
 #----------------------------------------------------------------------
 
 import os
-import urllib2
+#import urllib2
 from datetime import datetime
 import time
 import re
@@ -129,7 +129,7 @@ class LocalGameCache(object):
         filename = os.path.basename(gf.url)
         folder = gf.game.url.split('?t=')[1]
         folder = safe_filename(gf.game.name)
-        print folder
+        print(folder)
         return os.path.join(self.dir, folder, filename)
 
     def mirror_game(self, game):
@@ -183,7 +183,7 @@ class LocalGameCache(object):
 
 def download(url, local_file):
     folder = os.path.dirname(local_file)
-    print "downloading %s %s" % (os.path.basename(local_file), url)
+    print("downloading %s %s" % (os.path.basename(local_file), url))
     if not os.path.isdir(folder):
         os.mkdir(folder)
     input = urllib2.urlopen(url)

@@ -14,6 +14,7 @@ import localsite
 from nohrio.ohrrpgce import *
 from rpgbatch import RPGIterator, RPGInfo
 from rpg_const import *
+import scrape
 
 import gamedb
 
@@ -27,13 +28,17 @@ def process_sources(db_name, sources):
     rpgs = RPGIterator(sources)
     for rpg, gameinfo, zipinfo in rpgs:
         #lumplist = [(lumpbasename(name, rpg), os.stat(name).st_size) for name in rpg.manifest]
-        gameid = (gameinfo.src + ': ' + gameinfo.id.replace('/', '-')).lower()
+        # The filenames of .zips from Op:OHR contain URL %xx escape codes, need to remove
+        # to get a gameid that can be part of a valid URL.
+        gameid = (gameinfo.src + ': ' + scrape.unquote(gameinfo.id).replace('/', '-')).lower()
 
         print "Processing RPG ", gameinfo.id, "as", gameid
         print " > ", gameinfo.longname, " --- ", gameinfo.aboutline
 
         game = gamedb.Game()
         game.name = gameinfo.longname.decode('latin-1')
+        if not game.name:
+            game.name = gameinfo.rpgfile
         game.description = gameinfo.aboutline.decode('latin-1')
 
         if gameinfo.rpgfile.lower().endswith('.rpgdir'):

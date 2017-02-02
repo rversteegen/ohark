@@ -2,17 +2,16 @@
 """
 Pull game data from Google Play and add to the DB
 """
+from __future__ import print_function
 import time
-from bs4 import BeautifulSoup, NavigableString
 
 import scrape
+from scrape import urljoin
 import gamedb
 import util
 from util import py2, tostr
 
 CACHE_INDEX = False
-
-db = gamedb.GameList('googleplay')
 
 def process_game_page(name, url):
     """Returns description"""
@@ -29,7 +28,7 @@ def process_game_page(name, url):
 
     author_div = dom.find('div', itemprop='author')
     game.author = tostr(author_div.find(itemprop='name').string)
-    game.author_link = 'https://play.google.com' + author_div.a['href']
+    game.author_link = urljoin(url, author_div.a['href'])
 
     # Grab description
     descrip_tag = dom.find(itemprop='description')
@@ -41,7 +40,7 @@ def process_game_page(name, url):
         game.tags.append(tostr(link.span.string))
 
     # Grab screenshots
-    datadir = "data/googleplay/" + srcid + '/'
+    datadir = 'data/%s/%s/' % (db.name, srcid)
     util.mkdir(datadir)
 
     for num, img in enumerate(dom.find_all('img', class_='full-screenshot')):
@@ -61,13 +60,16 @@ def process_index_page(url):
 
     for link in dom.find_all('a', class_='title'):
         name = link['title']
-        url = 'https://play.google.com' + link['href']
-        #print(name, url)
-        process_game_page(name, url)
+        gameurl = urljoin(url, link['href'])
+        #print(name, gameurl)
+        process_game_page(name, gameurl)
         #time.sleep(0.5)
 
 
+db = gamedb.GameList('googleplay')
+
 process_index_page('https://play.google.com/store/search?q=ohrrpgce&c=apps')
+#process_game_page("C. Kane", "https://play.google.com/store/apps/details?id=com.superwalrusland.ckane")
 
 print(db.games)
 db.save()

@@ -1,0 +1,52 @@
+OHR Archive
+===========
+
+A grand unified cross-referenced archive of OHRRPGCE games and reviews.
+Website, crawler, aggregator, archive, gamedata inspector, browser, web-based game player.
+Work in progress. Early days still.
+Data from all OHR gamelists and review website will eventually be imported.
+
+Written in pure Python. Works with at least Python 2.6, 2.7, 3.5, 3.6.
+
+To download the database files:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+(This is optional, but there won't be any content on the website otherwise!)
+
+Download the database files containing the gamelists from
+http://tmc.castleparadox.com/ohr/archive/databases/
+and place them in the src/databases/ directory.
+
+To crawl the gamelists:
+~~~~~~~~~~~~~~~~~~~~~~~
+(Optional; this takes a while, so you're better off following the instructions
+above to download the pre-imported copies of the databases)
+
+Modules to install:
+ bs4   (BeautifulSoup 4)
+ lxml  Optional - for faster html parsing
+
+> cd src
+> ./pull_castleparadox.py
+> ./pull_slimesalad.py
+> ./pull_google_play.py
+These scripts cache all files they download to src/download_cache/
+(about 109MB in total currently) and will not ever download them
+again, so re-running will be much faster.
+They also copy the screenshots to src/data/. zip files are not yet downloaded.
+
+To process .zip/.rpg files:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+This isn't automated yet; you need to provide your own archive of .zip,
+.rpgdir or .rpg files. Then feed them on the commandline to src/process_rpgs.py.
+See src/process_cp_archive.sh for an example.
+
+To host the website:
+~~~~~~~~~~~~~~~~~~~~
+> cd web
+> ./local_server.py
+Then visit http://localhost:8007
+
+The website uses WSGI so can be hosted using any server directly supporting
+Python webapps. Also, see web/.htaccess to run using Apache's mod_python.
+Also web/flupserve.py is a FastCGI interface for the website, but doesn't
+seem to work with Apache 2.2.

@@ -1,22 +1,19 @@
 #!/usr/bin/env python
 from __future__ import print_function
-import os
-from datetime import datetime
-import time
 import re
-from bs4 import BeautifulSoup, NavigableString
-import StringIO
 
 import scrape
+from scrape import urljoin
 import gamedb
 import util
 from util import py2, tostr
 from slimesalad_gamedump import ChunkReader, GameInfo
 
-db = gamedb.GameList('ss')
+if py2:
+    import StringIO
+else:
+    from io import StringIO
 
-def safe_string():
-    "Accessing .string on a bs4 tag with no strign returns None"
 
 def process_game_page(url):
     """Returns description"""
@@ -37,7 +34,7 @@ def process_game_page(url):
 
     author_box = dom.find(class_='gameauthor')
     game.author = tostr(author_box.find(class_='title').string)
-    game.author_link = 'http://www.slimesalad.com/forum/' + util.remove_sid(author_box.a['href'])
+    game.author_link = urljoin(url, util.remove_sid(author_box.a['href']))
 
     # Grab description
     descrip_tag = dom.find(class_='postbody')
@@ -53,8 +50,7 @@ def process_game_page(url):
         info, descrip_tag, _ = tag.next_siblings
         # info is e.g. "(37.5 KB; downloaded 351 times)"
         download_count = int(info.split()[-2])
-        # strip leading ./ from link
-        download = ('http://www.slimesalad.com/forum/' + util.remove_sid(tag['href'])[2:],
+        download = (urljoin(url, util.remove_sid(tag['href'])),
                     tostr(tag.b.string),  # title of the download
                     download_count,
                     tostr(descrip_tag.string))
@@ -65,7 +61,7 @@ def process_game_page(url):
         datadir = 'data/%s/%s/' % (db.name, srcid)
         util.mkdir(datadir)
 
-        data = scrape.get_url('http://www.slimesalad.com/forum/' + img_tag['src'])
+        data = scrape.get_url(urljoin(url, img_tag['src']))
         filename = datadir + img_tag['src'].split('/')[-1]
         with open(filename, 'wb') as fil:
             fil.write(data)
@@ -74,7 +70,7 @@ def process_game_page(url):
     # Reviews
     game.reviews = []
     for tag in dom.find_all('a', string='Review'):
-        game.reviews.append('http://www.slimesalad.com/forum/' + tag['href'])
+        game.reviews.append(urljoin(url, tag['href']))
 
     # Tags
     for tag in dom.find_all(attrs = {'data-tag': True}):
@@ -98,6 +94,8 @@ def process_index_page(url, limit = 9999):
         limit -= 1
         if limit <= 0:
             break
+
+db = gamedb.GameList('ss')
 
 process_index_page('http://www.slimesalad.com/forum/gamedump.php')
 

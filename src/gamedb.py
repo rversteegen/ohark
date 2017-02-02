@@ -30,13 +30,6 @@ SOURCES = {
 
 db_cache = {}
 
-def cached_load(source_name):
-    #return GameList.load(source_name)
-    if source_name not in db_cache:
-        db_cache[source_name] = GameList.load(source_name)
-    return db_cache[source_name]
-
-
 class Game:
     """
     A single entry
@@ -100,8 +93,30 @@ class GameList:
         fname = db_filename(source_name)
         if os.path.isfile(fname):
             with open(fname, 'rb') as dbfile:
+                print("Loading " + fname)
                 ret.games = pickle.load(dbfile)
+                ret.mtime = os.stat(fname).st_mtime
                 return ret
+
+    @classmethod
+    def cached_load(cls, source_name):
+        """Drop-in replacement for .load(), which does caching"""
+        fname = db_filename(source_name)
+
+        if source_name in db_cache:
+            # Check if the DB has changed since
+            if not os.path.isfile(fname):
+                del db_cache[source_name]
+                return None
+
+            mtime = os.stat(fname).st_mtime
+            if mtime > db_cache[source_name].mtime:
+                print("Dropped out-of-date cached DB")
+                del db_cache[source_name]
+
+        if source_name not in db_cache:
+            db_cache[source_name] = GameList.load(source_name)
+        return db_cache[source_name]
 
     def save(self):
         """

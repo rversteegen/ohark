@@ -39,6 +39,7 @@ class Game:
     # but can't initialise lists here...
     extra_info = ""         # Info grabbed from .rpg files, currently
     mtime = None            # Last modification time of the game/game entry
+    gen = None              # Contents of gen lump
 
     def __init__(self):
         self.name = ""

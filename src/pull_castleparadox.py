@@ -95,10 +95,12 @@ def process_index_page(url, limit = 9999):
         if limit <= 0:
             break
 
+
+scrape.TooManyRequests.remaining_allowed = 3000  # Override this safety-check
 if True:
     db = gamedb.GameList('cp')
 
-    process_index_page('http://castleparadox.com/search-gamelist.php?mirror=true', 50)
+    process_index_page('http://castleparadox.com/search-gamelist.php?mirror=true')
 
     #process_game_page('http://castleparadox.com/gamelist-display.php?game=640')   # unicode author name
     #process_game_page('http://castleparadox.com/gamelist-display.php?game=1040')

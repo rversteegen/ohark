@@ -31,8 +31,8 @@ Modules to install:
 > ./pull_google_play.py
 These scripts cache all files they download to src/download_cache/
 (about 109MB in total currently) and will not ever download them
-again. They also copy the screenshots to src/data/. .zip files are not
-downloaded.
+again, so re-running will be much faster.
+They also copy the screenshots to src/data/. zip files are not yet downloaded.
 
 To process .zip/.rpg files:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~

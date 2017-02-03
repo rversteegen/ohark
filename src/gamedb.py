@@ -145,7 +145,7 @@ class GameList:
                 return None
 
             mtime = os.stat(fname).st_mtime
-            if mtime > db_cache[source_name].mtime:
+            if mtime != db_cache[source_name].mtime:
                 print("Dropped out-of-date cached DB")
                 del db_cache[source_name]
 

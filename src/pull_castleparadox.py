@@ -19,7 +19,6 @@ encoding = 'utf-8'
 #encoding = 'latin-1'
 
 def process_game_page(url):
-    """Returns description"""
     dom = scrape.get_page(url, encoding)
 
     assert '?game=' in url and len(url.split('=')) == 2, "Expected only one query in page url, 'game'"

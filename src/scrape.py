@@ -24,10 +24,10 @@ from util import py2, tostr
 
 if py2:
     from urlparse import urlparse, urljoin
-    from urllib import urlretrieve, quote, unquote
+    from urllib import urlretrieve, quote, unquote, urlencode
     from urllib2 import urlopen, HTTPError
 else:
-    from urllib.parse import urlparse, urljoin, quote, unquote
+    from urllib.parse import urlparse, urljoin, quote, unquote, urlencode
     from urllib.request import urlopen, urlretrieve
     from urllib.error import HTTPError
 
@@ -99,7 +99,7 @@ def is_subpage_of(base_url):
 
 class BadUrl(BadInput): pass
 
-def get_url(url, verbose = False, cache = True):
+def get_url(url, post_data = None, verbose = False, cache = True):
     """Download a URL or fetch it from the cache, and return bytes"""
     # Get 'path': local location of cached file
     parsed = urlparse(url)
@@ -108,6 +108,12 @@ def get_url(url, verbose = False, cache = True):
         path += '?' + parsed.query
     if path[-1] == '/':
         path += 'index.html'
+    if post_data:
+        encoded_data = urlencode(post_data)
+        path += "!POST=" + encoded_data
+    else:
+        encoded_data = None
+
     noexist_file = path + '.missing'
     util.mkdir(os.path.dirname(path))
 
@@ -156,7 +162,7 @@ def get_url(url, verbose = False, cache = True):
             return data
 
         else:
-            filename, headers = urlretrieve(fullurl, path)
+            filename, headers = urlretrieve(fullurl, path, data = encoded_data)
 
     with open(path, 'rb') as fil:
         return fil.read()
@@ -168,9 +174,9 @@ def auto_decode(data, default_encoding = 'utf-8'):
         data = data.decode('latin-1')
     return data
 
-def get_page(url, encoding = 'utf-8', cache = True):
+def get_page(url, encoding = 'utf-8', cache = True, post_data = None):
     """Download a URL of an HTML page or fetch it from the cache, and return a BS object"""
-    data = get_url(url, cache = cache)
+    data = get_url(url, post_data, cache = cache)
     data = auto_decode(data, encoding)
     # Convert non-breaking spaces to spaces
     #data = data.replace(u'\xa0', ' ')

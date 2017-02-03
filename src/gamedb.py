@@ -57,7 +57,86 @@ class BinData(object):
         return util.array_from_string(self.val, ctype)
 
 
-db_cache = {}
+class DataBaseLayer:
+    """
+    This class handles saving, loading, and caching of databases (which are just .pickle files).
+    DBs are python objects.
+    """
+
+    class CacheItem:
+        "Has two members: .db and .mtime"
+
+    cache = {}
+
+    @classmethod
+    def db_filename(cls, source_name):
+        return DB_DIR + '/' + source_name + '.pickle'
+
+    @classmethod
+    def _load(cls, source_name):
+        """
+        Loads from saved database with the given name if already exists, otherwise returns None.
+        Returns a CacheItem. Does not read or write the cache.
+        """
+        fname = cls.db_filename(source_name)
+        if os.path.isfile(fname):
+            with open(fname, 'rb') as dbfile:
+                print("Loading " + fname)
+                ret = cls.CacheItem()
+                if py2:
+                    ret.db = pickle.load(dbfile)
+                else:
+                    # When loading a DB pickled by Python 2, str becomes bytes and is decoded to a (unicode) str.
+                    # Use encoding='latin-1' so that no error is thrown in the case of BinData contents,
+                    # which BinData.__setstate__ then converts back to bytes.
+                    # Can't use encoding='bytes' because then all dict keys become bytes!!
+                    ret.db = pickle.load(dbfile, encoding='latin-1')
+                ret.mtime = os.stat(fname).st_mtime
+                return ret
+
+    @classmethod
+    def load(cls, source_name):
+        """
+        Loads from saved database with the given name if already exists, otherwise returns None.
+        """
+        item = cls._load(source_name)
+        if not item:
+            return None
+        return item.db
+
+    @classmethod
+    def cached_load(cls, source_name):
+        """Drop-in replacement for .load(), which does caching"""
+        fname = cls.db_filename(source_name)
+
+        if source_name in cls.cache:
+            # Check if the DB has changed since
+            if not os.path.isfile(fname):
+                del cls.cache[source_name]
+                return None
+
+            mtime = os.stat(fname).st_mtime
+            if mtime != cls.cache[source_name].mtime:
+                print("Dropped out-of-date cached DB")
+                del cls.cache[source_name]
+
+        if source_name not in cls.cache:
+            cls.cache[source_name] = cls._load(source_name)
+        return cls.cache[source_name].db
+
+    @classmethod
+    def save(cls, source_name, db):
+        """
+        Save to file, and place in the cache.
+        """
+        util.mkdir(DB_DIR)
+        fname = cls.db_filename(source_name)
+        with open(fname, 'wb') as dbfile:
+            pickle.dump(db, dbfile, 2)  # protocol 2 for python 2 compat
+        item = cls.CacheItem()
+        item.db = db
+        item.mtime = os.stat(fname).st_mtime
+        cls.cache[source_name] = item
 
 class Game:
     """
@@ -99,9 +178,6 @@ class Game:
     def __repr__(self):
         return 'Game<%s>' % (self.name,)
 
-def db_filename(source_name):
-    return DB_DIR + '/' + source_name + '.pickle'
-
 class GameList:
     """
     Contains a list of Games, as self.games, from a single source.
@@ -113,55 +189,21 @@ class GameList:
         self.games = dict()
 
     @classmethod
-    def load(cls, source_name):
-        """
-        Loads from saved database with the given name if already exists, otherwise returns None.
-        """
-        ret = cls(source_name)
-        fname = db_filename(source_name)
-        if os.path.isfile(fname):
-            with open(fname, 'rb') as dbfile:
-                print("Loading " + fname)
-                if py2:
-                    ret.games = pickle.load(dbfile)
-                else:
-                    # When loading a DB pickled by Python 2, str becomes bytes and is decoded to a (unicode) str.
-                    # Use encoding='latin-1' so that no error is thrown in the case of BinData contents,
-                    # which BinData.__setstate__ then converts back to bytes.
-                    # Can't use encoding='bytes' because then all dict keys become bytes!!
-                    ret.games = pickle.load(dbfile, encoding='latin-1')
-                ret.mtime = os.stat(fname).st_mtime
-                return ret
-
-    @classmethod
     def cached_load(cls, source_name):
-        """Drop-in replacement for .load(), which does caching"""
-        fname = db_filename(source_name)
-
-        if source_name in db_cache:
-            # Check if the DB has changed since
-            if not os.path.isfile(fname):
-                del db_cache[source_name]
-                return None
-
-            mtime = os.stat(fname).st_mtime
-            if mtime != db_cache[source_name].mtime:
-                print("Dropped out-of-date cached DB")
-                del db_cache[source_name]
-
-        if source_name not in db_cache:
-            db_cache[source_name] = GameList.load(source_name)
-        return db_cache[source_name]
+        """Loads from saved database with the given name if already exists, otherwise returns None."""
+        # There's no good reason that just .games is saved...
+        games = DataBaseLayer.cached_load(source_name)
+        if not games:
+            return None
+        ret = cls(source_name)
+        ret.games = games
+        return ret
 
     def save(self):
         """
         Save to file.
         """
-        db_cache[self.name] = self
-        util.mkdir(DB_DIR)
-        with open(db_filename(self.name), 'wb') as dbfile:
-            pickle.dump(self.games, dbfile, 2)  # protocol 2 for python 2 compat
-
+        DataBaseLayer.save(self.name, self.games)
 
 class _GameIndex():
     """Dead code"""

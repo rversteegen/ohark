@@ -88,7 +88,7 @@ def handle_gamelists(path):
             db = gamedb.GameList.cached_load(listname)
         reqinfo.footer_info += " DB load in %.3fs. " % timing.time
         if not db:
-            return render_page("<p>Game list %s does not exist.</p>" % listname, status = '404 Not Found')
+            return notfound("Game list %s does not exist." % listname)
 
         if len(path) == 2:
             return render_gamelist(db)
@@ -101,7 +101,7 @@ def handle_gamelists(path):
                 return ret
 
             if gameid not in db.games:
-                return render_page("<p>Game %s/%s does not exist.</p>" % (listname, gameid), status = '404 Not Found')
+                return notfound("Game %s/%s does not exist." % (listname, gameid))
             return render_game(listname, gameid, db.games[gameid])
 
 ################################################################################
@@ -208,18 +208,18 @@ def render_page(content, title = 'OHR Archive', topnote = '', status = '200 OK')
         topnote = topnote, footer_info = reqinfo.footer_info
     ))]
 
-def templated_static_page(fname, status = '200 OK'):
+def templated_static_page(fname, title = 'OHR Archive', status = '200 OK', **kwargs):
     """Try to render an .html link by substituting the corresponding .content.html file into
     the global template; otherwise return None."""
     pagename, extn = os.path.splitext(fname)
     print(pagename, os.path.abspath(os.curdir))
     if extn == '.html' and os.path.isfile(pagename + '.content.html'):
         with open(pagename + '.content.html', 'r') as temp:
-            return render_page(temp.read(), status = status)
+            content = temp.read().format(**kwargs)
+            return render_page(content, title = title, status = status)
 
-def notfound(path):
-    return (templated_static_page('404.html', status = '404 Not Found')
-            or render_page("<p>Not found.</p>", status = '404 Not Found'))   # fallback
+def notfound(message):
+    return templated_static_page('404.html', message = message, title = 'OHR Archive - 404', status = '404 Not Found')
 
 def redirect(link):
     """
@@ -288,4 +288,4 @@ def application(environ, start_response):
     if path[0] == "gamelists":
         return handle_gamelists(path)
     else:
-        return notfound(path)
+        return notfound(environ.get('PATH_INFO', '/') + " not found")

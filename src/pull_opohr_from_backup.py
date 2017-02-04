@@ -75,7 +75,7 @@ def process_game(dirname, path):
         extn = os.path.splitext(fname)[1]
         if fname.lower() != dirname.lower() + extn:
             if extn in image_extns:  # We make use of extra screenshots, so don't report
-                game.extra_info += "(Note: the page for this game on Op:OHR has a missing screenshot.)"
+                game.extra_info += "(Note: the page for this game on Op:OHR has a missing screenshot.)\n"
                 print(" Note: found game with extra screenshot, %s/%s" % (gamename, fname))
                 stats['extrascreenshots'] += 1
             else:
@@ -88,10 +88,10 @@ def process_game(dirname, path):
             print(" Note: found game with broken download link or screenshot, " + fname)
             if extn == '.zip':
                 stats['extradownloads'] += 1
-                game.extra_info += "(Note: the page for this game on Op:OHR has a broken download.)"
+                game.extra_info += "(Note: the page for this game on Op:OHR has a broken download.)\n"
             elif extn in image_extns:
                 stats['extrascreenshots'] += 1
-                game.extra_info += "(Note: the page for this game on Op:OHR has a missing screenshot.)"
+                game.extra_info += "(Note: the page for this game on Op:OHR has a missing screenshot.)\n"
 
         assert extn in expected_extns
         by_extn[extn].append(fname)
@@ -127,7 +127,7 @@ def process_game(dirname, path):
         game.downloads = [OPOHR_URL + 'gamelist/' + dirname + '/' + by_extn['.zip'][0]]
         if status == "No demo":
             print(" %s: Status '%s' but game has a download" % (gamename, status))
-            game.extra_info += "(Note: the page for this game on Op:OHR is missing the download link.)"
+            game.extra_info += "(Note: the page for this game on Op:OHR is missing the download link.)\n"
             stats['extradownloads'] += 1
             status = None
 

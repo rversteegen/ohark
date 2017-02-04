@@ -149,8 +149,11 @@ class Screenshot:
         self.local_path = local_path   # Path of the local copy, if any
         self.description = description
 
-    def img_tag(self):
-        return '<img src="%s" alt="Screenshot" />' % (self.url,)
+    def img_tag(self, title = ""):
+        if title and self.description:
+            title += "\n"
+        title += self.description or ""
+        return '<img src="%s" alt="Screen" title="%s" />' % (self.url, title)
 
     def __repr__(self):
         return 'Screenshot<%s, %s>' % (self.local_path.split('/')[-1], self.description or "")

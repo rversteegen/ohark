@@ -8,6 +8,7 @@ import os.path
 import cgi
 import sys
 import time
+import random
 
 import localsite
 #import tabulate
@@ -206,6 +207,31 @@ def render_game(listname, gameid, game):
 
 ################################################################################
 
+def handle_gallery(path):
+    """
+    Generate a page of random screenshots.
+    path is ignored.
+    """
+    screenshots = []
+
+    for listname, listinfo in gamedb.SOURCES.items():
+        if listinfo.get('hidden', False):
+            continue
+        db = gamedb.GameList.cached_load(listname)
+        for srcid, game in db.games.items():
+            gameurl = 'gamelists/%s/%s/' % (db.name, srcid)
+            screenshots += [(gameurl, game.name, game.author, screenshot) for screenshot in game.screenshots]
+
+    random.shuffle(screenshots)
+    ret = ''
+    for gameurl, gamename, gameauthor, screenshot in screenshots[:20]:
+        ret += util.link(gameurl, screenshot.img_tag('%s by %s' % (gamename, gameauthor)))
+
+    return templated_page('gallery.html', images = ret, title = 'OHRRPGCE Gallery')
+
+
+################################################################################
+
 def render_page(content, title = 'OHR Archive', topnote = '', status = '200 OK'):
     """
     Put the content of a dynamic page in the generic template, and return it to the WGSI server.
@@ -217,7 +243,7 @@ def render_page(content, title = 'OHR Archive', topnote = '', status = '200 OK')
         topnote = topnote, footer_info = reqinfo.footer_info
     ))]
 
-def templated_static_page(fname, title = 'OHR Archive', status = '200 OK', **kwargs):
+def templated_page(fname, title = 'OHR Archive', status = '200 OK', **kwargs):
     """Try to render an .html link by substituting the corresponding .content.html file into
     the global template; otherwise return None."""
     pagename, extn = os.path.splitext(fname)
@@ -228,7 +254,7 @@ def templated_static_page(fname, title = 'OHR Archive', status = '200 OK', **kwa
             return render_page(content, title = title, status = status)
 
 def notfound(message):
-    return templated_static_page('404.html', message = message, title = 'OHR Archive - 404', status = '404 Not Found')
+    return templated_page('404.html', message = message, title = 'OHR Archive - 404', status = '404 Not Found')
 
 def redirect(link):
     """
@@ -257,10 +283,10 @@ def static_serve(path, environ, start_response):
         return send_file(fname)
     if os.path.isfile(fname + '/index.html'):
         return send_file(fname + '/index.html')
-    ret = templated_static_page(fname)
+    ret = templated_page(fname)
     if ret:
         return ret
-    ret = templated_static_page(fname + '/index.html')
+    ret = templated_page(fname + '/index.html')
     if ret:
         return ret
 
@@ -296,5 +322,7 @@ def application(environ, start_response):
     # Handle dynamic pages
     if path[0] == "gamelists":
         return handle_gamelists(path)
+    elif path[0] == "gallery":
+        return handle_gallery(path)
     else:
         return notfound(environ.get('PATH_INFO', '/') + " not found")

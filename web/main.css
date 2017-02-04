@@ -10,6 +10,7 @@ body {
     border-radius: 1.5em;
     background-color: #333;
     padding: 1em 0.5em 1em 0.5em;
+    overflow: auto;    /* Expand to fit all contained floats. */
 }
 
 .topnote {
@@ -58,13 +59,14 @@ td {
 table.game {
     padding: 10px 10px;
 }
-
 .screenshot {
     float: left;
     padding: 0 1em 1em 0;
 }
 
-img {
+.screenshot img {
+    /* This actually looks bad when scaling down an image... could use a fancy
+       rule to select only small images /*
     image-rendering: pixelated; /* Chrome */
     image-rendering: -moz-crisp-edges;         /* Firefox */
     image-rendering:   -o-crisp-edges;         /* Opera */
@@ -77,6 +79,15 @@ img {
     /*width: 200%;*/
     min-width: 640px;
     max-width: 640px;
+}
+
+.gallery img {
+    /* Don't use crisp-edges, since (almost) never scaling up */
+    /* I think inline only does something if the <img> is inside a div
+       rather an <a>? */
+    /*display: inline;*/
+    padding: 0 2px 0px 0;
+    max-width: 320px;
 }
 
 .caption {

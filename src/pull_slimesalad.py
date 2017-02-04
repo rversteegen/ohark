@@ -66,7 +66,10 @@ def process_game_page(url):
 
     # Grab screenshots
     for img_tag in dom.find_all('img', class_='attach_img'):
-        caption = tostr(img_tag.parent.find_next_sibling('div', class_='attachheader').string)
+        caption = img_tag.parent.find_next_sibling('div', class_='attachheader').string
+        # caption is either None or a NavigableString
+        if caption:
+            caption = tostr(caption)
         game.add_screenshot(db.name, urljoin(url, img_tag['src']), caption)
 
     # Reviews

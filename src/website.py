@@ -278,7 +278,9 @@ def templated_page(fname, title = 'OHR Archive', topnote = '', status = '200 OK'
     print(pagename, os.path.abspath(os.curdir))
     if extn == '.html' and os.path.isfile(pagename + '.content.html'):
         with open(pagename + '.content.html', 'r') as temp:
-            content = temp.read().decode('utf-8')   # Read, and first convert to unicode
+            content = temp.read()
+            if py2:
+                content = content.decode('utf-8')   # read() produced str, not unicode
             content = content.format(**kwargs)
             return render_page(content, title = title, topnote = topnote, status = status)
 

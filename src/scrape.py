@@ -196,7 +196,7 @@ def tag_contents(tag):
     "Get the html contents of a BS4 tag. Same as just str(tag), but excludes the tag itself"
     # Need to convert tags to str/unicode. Must not call 'str' on
     # a py2 unicode obj, because that attempts to encode it to ascii.
-    return ''.join(tostr(piece).strip() for piece in tag.contents)
+    return ''.join(tostr(piece) for piece in tag.contents)
 
 
 if py2:

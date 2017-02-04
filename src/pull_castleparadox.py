@@ -74,7 +74,7 @@ def process_game_page(url):
     for tag in dom.find_all('a', string=re.compile('Review #')):
         game.reviews.append(urljoin(url, tag['href']))
 
-    # Double-check that there are no NavigableStrings
+    # Double-check that there are no NavigableStrings or undecoded strings
     game = scrape.clean_strings(game)
 
     print(game.__dict__)

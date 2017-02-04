@@ -84,7 +84,7 @@ def process_game_page(url):
     for tag in dom.find_all(attrs = {'data-tag': True}):
         game.tags.append(tostr(tag.a.string))
 
-    # Double-check that there are no NavigableStrings
+    # Double-check that there are no NavigableStrings or undecoded strings
     game = scrape.clean_strings(game)
 
     print(game.__dict__)

@@ -80,6 +80,9 @@ def process_sources(db_name, sources):
 
     rpgs.print_summary()
 
+    # Double-check that there are no undecoded strings
+    game = scrape.clean_strings(game)
+
     db.save()
 
 

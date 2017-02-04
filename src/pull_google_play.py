@@ -50,7 +50,7 @@ def process_game_page(name, url):
             fil.write(data)
         game.screenshots.append(filename)
 
-    # Double-check that there are no NavigableStrings
+    # Double-check that there are no NavigableStrings or undecoded strings
     game = scrape.clean_strings(game)
 
     db.games[srcid] = game

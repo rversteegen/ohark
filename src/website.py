@@ -120,6 +120,31 @@ def render_gamelists():
     ret += '</ul>'
     return render_page(ret, title = 'OHR Archive - Gamelists')
 
+def gamelist_filter_game(db, gameid):
+    """
+    Inspects the query part of the URL, and returns True if this
+    game should be displayed on the game page
+    """
+    if 'tag' not in reqinfo.query:
+        return True   # Show all games
+    game = db.games[gameid]
+    # There can be multiple tags=... in the query; show a game
+    # if any of them match
+    for tag in reqinfo.query['tag']:
+        if tag in game.tags:
+            return True
+    return False
+
+def gamelist_describe_filter(listname):
+    """
+    Provide a piece of text telling which filter is currently active for the gamelist display.
+    """
+    if 'tag' not in reqinfo.query:
+        return ""
+    tags = ' or '.join('"%s"' % tag for tag in reqinfo.query['tag'])
+    return ("Filtering for games with tag %s. Click %s to show all games."
+            % (tags, util.link("gamelists/" + listname, "here")))
+
 def render_gamelist(db):
     """
     Generate one of the gamelists/X/ pages.
@@ -127,9 +152,8 @@ def render_gamelist(db):
     dbinfo = gamedb.SOURCES[db.name]
     is_gamelist = dbinfo['is_gamelist']
     topnote = util.link("gamelists/", "Back to gamelists ...") + "\n"
-    ret = "<h1>Gamelist: %s</h1>" % dbinfo['name']
-    ret += "<p>Click the Name to go to the game entry.</p>\n"
-    ret += "<p>%s games.</p><br/>\n" % len(db.games)
+    # If there is a filter active, say so
+    filterinfo = gamelist_describe_filter(db.name)
 
     # Generate a table as a list-of-lists, so it can be sorted
     if is_gamelist:
@@ -138,7 +162,10 @@ def render_gamelist(db):
         headers = 'File', 'Name', 'Description'
     table = []
     for gameid, game in db.games.items():
-        #print(type(game.author), [hex(ord(x)) for x in game.author])
+        # Filter out certain games
+        if not gamelist_filter_game(db, gameid):
+            continue
+
         row = []
         row.append( game.name.lower().strip() )  # sort key
         #if is_gamelist:
@@ -154,14 +181,15 @@ def render_gamelist(db):
     # Strip the sort key
     table = [x[1:] for x in table]
 
-    ret += """<table class="game" border="0">\n<tbody>\n"""
-    ret += "<tr>" + "".join("<th>%s</th>" % title for title in headers) + "</tr>\n"
+    table_html = "<tr>" + "".join("<th>%s</th>" % title for title in headers) + "</tr>\n"
     lines = []
     for row in table:
         lines.append("<tr>" + "".join("<td>%s</td>" % item for item in row) + "</tr>\n")
-    ret += "".join(lines)
-    ret += "</tbody></table>\n"
-    return render_page(ret, topnote = topnote, title = 'OHR Archive - ' + dbinfo['name'])
+    table_html += "".join(lines)
+
+    format_strs = {'listname': dbinfo['name'], 'table': table_html, 'filterinfo': filterinfo,
+                   'numshown': len(table), 'numtotal': len(db.games)}
+    return templated_page('gamelist.html', topnote = topnote, title = 'OHR Archive - ' + dbinfo['name'], **format_strs)
 
 def screenshot_box(screenshot):
     """Given a gamedb.Screenshot, return some HTML for it and its description, if any"""
@@ -243,15 +271,16 @@ def render_page(content, title = 'OHR Archive', topnote = '', status = '200 OK')
         topnote = topnote, footer_info = reqinfo.footer_info
     ))]
 
-def templated_page(fname, title = 'OHR Archive', status = '200 OK', **kwargs):
+def templated_page(fname, title = 'OHR Archive', topnote = '', status = '200 OK', **kwargs):
     """Try to render an .html link by substituting the corresponding .content.html file into
     the global template; otherwise return None."""
     pagename, extn = os.path.splitext(fname)
     print(pagename, os.path.abspath(os.curdir))
     if extn == '.html' and os.path.isfile(pagename + '.content.html'):
         with open(pagename + '.content.html', 'r') as temp:
-            content = temp.read().format(**kwargs)
-            return render_page(content, title = title, status = status)
+            content = temp.read().decode('utf-8')   # Read, and first convert to unicode
+            content = content.format(**kwargs)
+            return render_page(content, title = title, topnote = topnote, status = status)
 
 def notfound(message):
     return templated_page('404.html', message = message, title = 'OHR Archive - 404', status = '404 Not Found')
@@ -312,12 +341,10 @@ def application(environ, start_response):
     if ret:
         return ret
 
-    # Query string... not used
+    # Convert the query string "?..." into a dictionary
+    # mapping to lists of values
     parameters = cgi.parse_qs(environ.get('QUERY_STRING', ''))
-    #print(parameters)
-    param = ''
-    if 'param' in parameters:
-        param = cgi.escape(parameters['param'][0])
+    reqinfo.query = parameters
 
     # Handle dynamic pages
     if path[0] == "gamelists":

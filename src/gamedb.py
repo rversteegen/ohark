@@ -6,6 +6,7 @@ import ctypes
 
 import util
 from util import py2
+import scrape
 
 if py2:
     import cPickle as pickle
@@ -142,6 +143,18 @@ class DataBaseLayer:
         item.mtime = os.stat(fname).st_mtime
         cls.cache[source_name] = item
 
+class Screenshot:
+    def __init__(self, url, local_path, description = ""):
+        self.url = url                 # URL for the original copy
+        self.local_path = local_path   # Path of the local copy, if any
+        self.description = description
+
+    def img_tag(self):
+        return '<img src="%s" alt="Screenshot" />' % (self.url,)
+
+    def __repr__(self):
+        return 'Screenshot<%s, %s>' % (self.local_path.split('/')[-1], self.description or "")
+
 class Game:
     """
     A single entry
@@ -176,9 +189,23 @@ class Game:
     def get_author(self):
         return self.author or "(blank author)"
 
-    def columns(self):
-        """For tabulating. Return an iterable"""
-        return self.name, self.author, self.url
+    def create_datadir(self, dbname):
+        datadir = 'data/%s/%s/' % (dbname, self.name)
+        util.mkdir(datadir)
+        return datadir
+
+    def add_screenshot(self, dbname, url, description = ""):
+        """
+        Add a screenshot to this game, and download a local copy too
+        """
+        # Download the file to datadir
+        datadir = self.create_datadir(dbname)
+        filename = datadir + url.split('/')[-1]
+        with open(filename, 'wb') as fil:
+            fil.write(scrape.get_url(url))
+        # Add the screenshot
+        screenshot = Screenshot(url, filename, description)
+        self.screenshots.append(screenshot)
 
     def __repr__(self):
         return 'Game<%s>' % (self.name,)

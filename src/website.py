@@ -162,6 +162,13 @@ def render_gamelist(db):
     ret += "</tbody></table>\n"
     return render_page(ret, topnote = topnote, title = 'OHR Archive - ' + dbinfo['name'])
 
+def screenshot_box(screenshot):
+    """Given a gamedb.Screenshot, return some HTML for it and its description, if any"""
+    content = screenshot.img_tag()
+    if screenshot.description:
+        content += '<div class="caption">%s</div>' % screenshot.description
+    return '<div class="screenshot">%s</div>' % content
+
 def render_game(listname, gameid, game):
     """
     Generates a gamelists/<listname>/<gameid>/ page for a single game entry
@@ -183,7 +190,9 @@ def render_game(listname, gameid, game):
         ret += add_row("Website", util.link(game.website, game.website))
     ret += add_row("Description", game.description)
     ret += add_row("Tags", game.tags and ", ".join(game.tags))
-    ret += add_row("Screenshots", game.screenshots) #"%d downloaded" % (len(game.screenshots),))
+    if game.screenshots:
+        shots = '\n'.join(screenshot_box(shot) for shot in game.screenshots)
+        ret += add_row("Screenshots", shots)
     ret += add_row("Downloads", game.downloads)
     ret += add_row("Reviews", game.reviews)
     info = game.extra_info

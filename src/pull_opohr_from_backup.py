@@ -9,6 +9,7 @@ http://tmc.castleparadox.com/ohr/archive/operation_ohr_backup.tar.xz (158MB)
 from __future__ import print_function
 import os
 from collections import defaultdict
+import shutil
 
 import scrape
 from scrape import urljoin
@@ -136,7 +137,12 @@ def process_game(dirname, path):
         print(" Invalid status '%s'" % status)
 
     for screenshot in by_extn['.jpg'] + by_extn['.gif']:
-        game.screenshots.append(screenshot)
+        # Copy each screenshot to this game's data directory, and register it
+        datadir = game.create_datadir(db.name)
+        filename = os.path.join(datadir, screenshot)
+        screenshot_url = OPOHR_URL + 'gamelist/' + scrape.quote(dirname + '/' + screenshot)
+        shutil.copy2(os.path.join(path, screenshot), filename)
+        game.screenshots.append(gamedb.Screenshot(screenshot_url, filename))
 
     game = scrape.clean_strings(game)
 

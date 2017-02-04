@@ -66,14 +66,8 @@ def process_game_page(url):
 
     # Grab screenshots
     for img_tag in dom.find_all('img', class_='attach_img'):
-        datadir = 'data/%s/%s/' % (db.name, srcid)
-        util.mkdir(datadir)
-
-        data = scrape.get_url(urljoin(url, img_tag['src']))
-        filename = datadir + img_tag['src'].split('/')[-1]
-        with open(filename, 'wb') as fil:
-            fil.write(data)
-        game.screenshots.append(filename)
+        caption = tostr(img_tag.parent.find_next_sibling('div', class_='attachheader').string)
+        game.add_screenshot(db.name, urljoin(url, img_tag['src']), caption)
 
     # Reviews
     game.reviews = []
@@ -87,7 +81,7 @@ def process_game_page(url):
     # Double-check that there are no NavigableStrings or undecoded strings
     game = scrape.clean_strings(game)
 
-    print(game.__dict__)
+    #print(game.__dict__)
     db.games[srcid] = game
 
 def process_index_page(url, limit = 9999):

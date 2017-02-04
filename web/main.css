@@ -52,11 +52,39 @@ tr {
 }
 
 td {
-    padding: 10px 10px;
+    padding: 10px 0px 10px 10px;
 }
 
 table.game {
     padding: 10px 10px;
+}
+
+.screenshot {
+    float: left;
+    padding: 0 1em 1em 0;
+}
+
+img {
+    image-rendering: pixelated; /* Chrome */
+    image-rendering: -moz-crisp-edges;         /* Firefox */
+    image-rendering:   -o-crisp-edges;         /* Opera */
+    image-rendering: -webkit-optimize-contrast;/* Webkit (non-standard naming) */
+    image-rendering: crisp-edges;
+    -ms-interpolation-mode: nearest-neighbor;   /* IE8+                           */
+}
+
+.screenshot img {
+    /*width: 200%;*/
+    min-width: 640px;
+    max-width: 640px;
+}
+
+.caption {
+    /*background-color: #383838;*/
+    border-width: 0 1px 3px 1px;
+    border-color: #777;
+    border-style: outset;
+    padding: 3px 2em;
 }
 
 .footer {

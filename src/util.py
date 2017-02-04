@@ -3,6 +3,7 @@ import os
 import re
 import time
 import ctypes
+import cgi
 
 ################################################################################
 ### Util
@@ -124,6 +125,10 @@ def link(href, text):
     if len(href):
         return '<a href="' + href + '">' + text + '</a>'
     return text
+
+def text2html(obj):
+    """Format raw text to html"""
+    return cgi.escape(obj).replace('\n', '<br>\n')
 
 def shorten(text, maxlen):
     if len(text) > maxlen - 3:

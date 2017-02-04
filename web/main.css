@@ -1,9 +1,33 @@
 body {
-    background-color: #333333;
+    background-color: #101010;
     color: #dddddd;
     font-family: Courier New;
     font-size: 90%;
+    margin: 1em 0.8em;
+}
 
+.body {
+    border-radius: 1.5em;
+    background-color: #333;
+    padding: 0.5em 0.5em 2em 0.5em;
+}
+
+.topnote {
+    padding: 0 0 0.8em 1em;
+
+}
+
+h1 {
+    margin: 0.5em;
+}
+
+li {
+    padding: 0.2em 0.5em;
+}
+
+th {
+    padding: 10px 10px;
+    /*text-align: left;*/
 }
 
 a {
@@ -32,7 +56,7 @@ table.game {
 }
 
 .footer {
-    color: #aaaaaa;
+    color: #bbb;
     padding: 35px 0 9px 0;
     text-align: center;
     font-size: 75%;

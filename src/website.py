@@ -1,10 +1,11 @@
+# -*- encoding: utf-8 -*-
 """
 This is the implementation of the frontend. It generates all webpages, and also
 serves static files.
 """
 
 import os.path
-from cgi import parse_qs, escape
+import cgi
 import sys
 import time
 
@@ -36,10 +37,6 @@ def encode(obj):
     if py2:
         return unicode(obj).encode('utf-8')
     return str(obj).encode('utf-8')
-
-def text(obj):
-    # Apparently escape encodes as bytes?
-    return escape(str(obj)).replace('\n', '<br>\n')
 
 with open(STATIC_ROOT + 'page_template.html', 'r') as temp:
     if py2:
@@ -128,8 +125,8 @@ def render_gamelist(db):
     """
     dbinfo = gamedb.SOURCES[db.name]
     is_gamelist = dbinfo['is_gamelist']
-    ret = util.link("gamelists/", "Back to gamelists ...") + "\n"
-    ret += "<h1>Gamelist: %s</h1>" % dbinfo['name']
+    topnote = util.link("gamelists/", "Back to gamelists ...") + "\n"
+    ret = "<h1>Gamelist: %s</h1>" % dbinfo['name']
     ret += "<p>Click the Name to go to the game entry.</p>\n"
     ret += "<p>%s games.</p><br/>\n" % len(db.games)
 
@@ -149,7 +146,7 @@ def render_gamelist(db):
         if is_gamelist:
             #util.link(game.author_link, game.get_author())
             row.append( game.get_author() )
-            row.append( game.url and util.link(game.url, "External") )
+            row.append( game.url and util.link(game.url, u"➔") )
         row.append( util.shorten(util.strip_html(game.description), 150) )
         table.append(row)
     table.sort()
@@ -163,14 +160,14 @@ def render_gamelist(db):
         lines.append("<tr>" + "".join("<td>%s</td>" % item for item in row) + "</tr>\n")
     ret += "".join(lines)
     ret += "</tbody></table>\n"
-    return render_page(ret, title = 'OHR Archive - ' + dbinfo['name'])
+    return render_page(ret, topnote = topnote, title = 'OHR Archive - ' + dbinfo['name'])
 
 def render_game(listname, gameid, game):
     """
     Generates a gamelists/X/Y/ page for a single game entry
     """
-    ret = util.link("gamelists/" + listname + "/", "Back to gamelist ...") + "\n"
-    ret += "<h1>%s</h1>" % game.get_name()
+    topnote = util.link("gamelists/" + listname + "/", "Back to gamelist ...") + "\n"
+    ret = "<h1>%s</h1>" % game.get_name()
     ret += """<table class="game" border="0">\n<tbody>\n"""
     def add_row(key, val, even_if_empty = False):
         if val or even_if_empty:
@@ -190,15 +187,15 @@ def render_game(listname, gameid, game):
     info = game.extra_info
     if game.gen:
         info += "\n" + inspect_rpg.get_gen_info(game)
-    ret += add_row("Info", text(info))
+    ret += add_row("Info", util.text2html(info))
     ret += add_row("Last modified", game.mtime and time.ctime(game.mtime))
 
     ret += "</tbody></table>\n"
-    return render_page(ret, title = 'OHR Archive - ' + game.name)
+    return render_page(ret, topnote = topnote, title = 'OHR Archive - ' + game.name)
 
 ################################################################################
 
-def render_page(content, title = 'OHR Archive', status = '200 OK'):
+def render_page(content, title = 'OHR Archive', topnote = '', status = '200 OK'):
     """
     Put the content of a dynamic page in the generic template, and return it to the WGSI server.
     """
@@ -206,7 +203,7 @@ def render_page(content, title = 'OHR Archive', status = '200 OK'):
     reqinfo.footer_info += " Page rendered in %.3fs." % (util.timer() - reqinfo.start)
     return [encode(PAGE_TEMPLATE.format(
         content = content, title = title, root = URL_ROOTPATH,
-        footer_info = reqinfo.footer_info
+        topnote = topnote, footer_info = reqinfo.footer_info
     ))]
 
 def templated_static_page(fname, status = '200 OK'):
@@ -271,7 +268,7 @@ def application(environ, start_response):
         path.remove('')
     print(path)
 
-    #return render_page(text(environ))
+    #return render_page(text2html(environ))
 
     # Handle static files and templated static pages
     ret = static_serve(path, environ, start_response)
@@ -279,11 +276,11 @@ def application(environ, start_response):
         return ret
 
     # Query string... not used
-    parameters = parse_qs(environ.get('QUERY_STRING', ''))
+    parameters = cgi.parse_qs(environ.get('QUERY_STRING', ''))
     #print(parameters)
     param = ''
     if 'param' in parameters:
-        param = escape(parameters['param'][0])
+        param = cgi.escape(parameters['param'][0])
 
     # Handle dynamic pages
     if path[0] == "gamelists":

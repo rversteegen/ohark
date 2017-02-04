@@ -122,7 +122,10 @@ class DataBaseLayer:
                 del cls.cache[source_name]
 
         if source_name not in cls.cache:
-            cls.cache[source_name] = cls._load(source_name)
+            db = cls._load(source_name)
+            if not db:
+                return None
+            cls.cache[source_name] = db
         return cls.cache[source_name].db
 
     @classmethod

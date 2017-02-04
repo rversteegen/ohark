@@ -23,11 +23,11 @@ from util import py2, tostr
 #     sys.stdout = codecs.getwriter('utf-8')(sys.stdout)
 
 if py2:
-    from urlparse import urlparse, urljoin
+    from urlparse import urlparse, urljoin, parse_qs
     from urllib import urlretrieve, quote, unquote, urlencode
     from urllib2 import urlopen, HTTPError
 else:
-    from urllib.parse import urlparse, urljoin, quote, unquote, urlencode
+    from urllib.parse import urlparse, urljoin, quote, unquote, urlencode, parse_qs
     from urllib.request import urlopen, urlretrieve
     from urllib.error import HTTPError
 

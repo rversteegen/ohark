@@ -139,7 +139,7 @@ def render_gamelist(db):
     for gameid, game in db.games.items():
         #print(type(game.author), [hex(ord(x)) for x in game.author])
         row = []
-        row.append( game.name.lower() )  # sort key
+        row.append( game.name.lower().strip() )  # sort key
         #if is_gamelist:
         row.append( gameid )           
         row.append( util.link('gamelists/%s/%s/' % (db.name, gameid), game.get_name()) )

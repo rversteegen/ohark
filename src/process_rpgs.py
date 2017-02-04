@@ -39,7 +39,7 @@ def process_sources(db_name, sources):
         game.name = gameinfo.longname
         if not game.name:
             game.name = gameinfo.rpgfile
-        game.name = game.name.decode('latin-1')
+        game.name = game.name.decode('latin-1').strip()
         game.description = gameinfo.aboutline.decode('latin-1')
 
         if gameinfo.rpgfile.lower().endswith('.rpgdir'):

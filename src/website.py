@@ -263,7 +263,7 @@ def application(environ, start_response):
     global reqinfo
     reqinfo = RequestInfo(start_response)
 
-    path = environ.get('PATH_INFO', '/').lower()
+    path = environ.get('PATH_INFO', '/')
     if path.startswith(URL_ROOTPATH):
         path = path[len(URL_ROOTPATH):]
     path = path.split('/')

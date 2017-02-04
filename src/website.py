@@ -14,6 +14,7 @@ import localsite
 import util
 import gamedb
 import inspect_rpg
+import pull_slimesalad
 
 py2 = sys.version_info[0] == 2
 
@@ -57,8 +58,31 @@ reqinfo = RequestInfo(None)  # dummy
 
 ################################################################################
 
+def handle_game_aliases(path, db):
+    """
+    Handle /gamelists/<listname>/<gameid>/... URLs which are aliases to the real pages
+    by redirecting to the canonical page. Returns None if not an alias.
+
+    path: a list of path segments; path[0]=='gamelists'
+    db:   the loaded DB for this gamelist
+    """
+    # ss/p=###/..., where p=### is taken from a game URL, as an alias,
+    listname, gameid = path[1], path[2]
+    if listname == 'ss' and gameid.startswith('p='):
+        link_db = gamedb.DataBaseLayer.cached_load('ss_links')
+        srcid = link_db['p2t'].get(int(gameid[2:]))
+        if not srcid:
+            return None
+        newpath = path[:]
+        newpath[2] = str(srcid)
+        url = URL_ROOTPATH + '/'.join(newpath)
+        return redirect(url)
+    return None
+
 def handle_gamelists(path):
-    "Delegate all URLs under gamelists/"
+    """Delegate all URLs under gamelists/
+    path is a list of path segments; path[0]=='gamelists'
+    """
     if len(path) == 1:
         return render_gamelists()
     else:
@@ -73,6 +97,12 @@ def handle_gamelists(path):
             return render_gamelist(db)
         else:
             gameid = path[2]
+
+            # First, handle aliases to games as special cases (returns a redirection)
+            ret = handle_game_aliases(path, db)
+            if ret:
+                return ret
+
             if gameid not in db.games:
                 return render_page("Game %s/%s does not exist." % (listname, gameid), status = '404 Not Found')
             return render_game(listname, gameid, db.games[gameid])
@@ -191,6 +221,13 @@ def templated_static_page(fname, status = '200 OK'):
 def notfound(path):
     return (templated_static_page('404.html', status = '404 Not Found')
             or render_page("Not found.", status = '404 Not Found'))   # fallback
+
+def redirect(link):
+    """
+    Creates a redirection.
+    """
+    reqinfo.set_header('301 Moved Permanently', [('Content-Type', 'text/html'), ('Location', link)])
+    return [encode("Please follow " + util.link(link, "this redirection"))]
 
 def static_serve(path, environ, start_response):
     """Handles static file requests, and also templated static pages.

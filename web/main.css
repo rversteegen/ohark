@@ -9,7 +9,7 @@ body {
 .body {
     border-radius: 1.5em;
     background-color: #333;
-    padding: 0.5em 0.5em 2em 0.5em;
+    padding: 1em 0.5em 1em 0.5em;
 }
 
 .topnote {
@@ -18,7 +18,7 @@ body {
 }
 
 h1 {
-    margin: 0.5em;
+    margin: 0.5em 0.5em 0.5em 1em;
 }
 
 li {
@@ -28,6 +28,9 @@ li {
 th {
     padding: 10px 10px;
     /*text-align: left;*/
+}
+p {
+    padding: 0 0.5em;
 }
 
 a {
@@ -39,6 +42,7 @@ table {
 /*    padding: 10px 4px;*/
     border-spacing: 10px;
   border-collapse: collapse;
+  margin: 0.5em 0em;
 }
 
 

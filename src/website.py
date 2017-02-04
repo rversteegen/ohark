@@ -88,7 +88,7 @@ def handle_gamelists(path):
             db = gamedb.GameList.cached_load(listname)
         reqinfo.footer_info += " DB load in %.3fs. " % timing.time
         if not db:
-            return render_page("Game list %s does not exist." % listname, status = '404 Not Found')
+            return render_page("<p>Game list %s does not exist.</p>" % listname, status = '404 Not Found')
 
         if len(path) == 2:
             return render_gamelist(db)
@@ -101,7 +101,7 @@ def handle_gamelists(path):
                 return ret
 
             if gameid not in db.games:
-                return render_page("Game %s/%s does not exist." % (listname, gameid), status = '404 Not Found')
+                return render_page("<p>Game %s/%s does not exist.</p>" % (listname, gameid), status = '404 Not Found')
             return render_game(listname, gameid, db.games[gameid])
 
 ################################################################################
@@ -111,7 +111,7 @@ def render_gamelists():
     Generate the gamelists/ page
     """
     ret = "<h1>Archived Gamelists</h1>\n"
-    ret += "The following gamelists have been imported:\n<ul>"
+    ret += "<p>The following gamelists have been imported:</p>\n<ul>"
     for src, info in sorted(gamedb.SOURCES.items()):
         if info.get('hidden', False):
             continue
@@ -219,7 +219,7 @@ def templated_static_page(fname, status = '200 OK'):
 
 def notfound(path):
     return (templated_static_page('404.html', status = '404 Not Found')
-            or render_page("Not found.", status = '404 Not Found'))   # fallback
+            or render_page("<p>Not found.</p>", status = '404 Not Found'))   # fallback
 
 def redirect(link):
     """

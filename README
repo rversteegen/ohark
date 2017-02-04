@@ -34,6 +34,13 @@ These scripts cache all files they download to src/download_cache/
 again, so re-running will be much faster.
 They also copy the screenshots to src/data/. zip files are not yet downloaded.
 
+Op:OHR is different, it's imported using a backup of the website directory tree
+instead of scrapping the website. The download is 158MB.
+> wget http://tmc.castleparadox.com/ohr/archive/operation_ohr_backup.tar.xz
+> tar xf operation_ohr_backup.tar.xz
+> cd src
+> ./pull_opohr_from_backup.sh
+
 To process .zip/.rpg files:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 This isn't automated yet; you need to provide your own archive of .zip,

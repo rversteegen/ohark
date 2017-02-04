@@ -101,6 +101,16 @@ def shell_output(*args, **kwargs):
     """Runs a program on the shell and returns stdout as a string"""
     return program_output(*args, shell=True, **kwargs)
 
+def partial_escape(url):
+    """
+    Quote characters in urls that browsers can't do automatically, because they have special meaning.
+    This can be used for forming srcids.
+    """
+    chars = "#?\\"
+    for char in chars:
+        url = url.replace(char, '%%%x' % ord(char))
+    return url
+
 _tag_regexp = re.compile('<[^>]*>')
 
 def strip_html(text):

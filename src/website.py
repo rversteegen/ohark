@@ -164,7 +164,7 @@ def render_gamelist(db):
 
 def render_game(listname, gameid, game):
     """
-    Generates a gamelists/X/Y/ page for a single game entry
+    Generates a gamelists/<listname>/<gameid>/ page for a single game entry
     """
     topnote = util.link("gamelists/" + listname + "/", "Back to gamelist ...") + "\n"
     ret = "<h1>%s</h1>" % game.get_name()
@@ -179,6 +179,8 @@ def render_game(listname, gameid, game):
         ret += add_row("Original entry", util.link(game.url, gameid) + " on " + gamedb.SOURCES[listname]['name'])
     else:
         ret += add_row("Origin/ID", gameid)
+    if game.website:
+        ret += add_row("Website", util.link(game.website, game.website))
     ret += add_row("Description", game.description)
     ret += add_row("Tags", game.tags and ", ".join(game.tags))
     ret += add_row("Screenshots", game.screenshots) #"%d downloaded" % (len(game.screenshots),))

@@ -2,3 +2,6 @@
 #*#
 *.pyc
 src/download_cache
+src/data
+src/databases
+operationohr

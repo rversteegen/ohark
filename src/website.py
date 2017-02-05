@@ -48,11 +48,25 @@ with open(STATIC_ROOT + 'page_template.html', 'r') as temp:
 
 class RequestInfo:
     def __init__(self, start_response):
-        self.start = util.timer()
+        self.req_timer = util.Timer().start()  # Time the total time spent handling the request
         self.set_header = start_response
         self.footer_info = ''
+        self.DB_timer = util.Timer()  # Time DB loads
+
+    def get_footer(self):
+        ret = self.footer_info
+        if self.DB_timer.time:
+             ret += " DB load in %.3fs. " % self.DB_timer.time
+        self.req_timer.stop()
+        ret += " Page rendered in %.3fs." % self.req_timer.time
+        return ret
+
 
 reqinfo = RequestInfo(None)  # dummy
+
+def get_gamelist(listname):
+    with reqinfo.DB_timer:
+        return gamedb.GameList.cached_load(listname)
 
 ################################################################################
 
@@ -67,7 +81,8 @@ def handle_game_aliases(path, db):
     # ss/p=###/..., where p=### is taken from a game URL, as an alias,
     listname, gameid = path[1], path[2]
     if listname == 'ss' and gameid.startswith('p='):
-        link_db = gamedb.DataBaseLayer.cached_load('ss_links')
+        with reqinfo.DB_timer:
+            link_db = gamedb.DataBaseLayer.cached_load('ss_links')
         srcid = link_db['p2t'].get(int(gameid[2:]))
         if not srcid:
             return None
@@ -85,9 +100,7 @@ def handle_gamelists(path):
         return render_gamelists()
     else:
         listname = path[1]
-        with util.Timer() as timing:
-            db = gamedb.GameList.cached_load(listname)
-        reqinfo.footer_info += " DB load in %.3fs. " % timing.time
+        db = get_gamelist(listname)
         if not db:
             return notfound("Game list %s does not exist." % listname)
 
@@ -171,7 +184,7 @@ def render_games(path):
     for listname, listinfo in gamedb.SOURCES.items():
         if listinfo.get('hidden'):
             continue
-        db = gamedb.GameList.cached_load(listname)
+        db = get_gamelist(listname)
         numtotal += len(db.games)
         for gameid, game in db.games.items():
             # Filter out certain games
@@ -279,7 +292,7 @@ def handle_gallery(path):
     for listname, listinfo in gamedb.SOURCES.items():
         if listinfo.get('hidden', False):
             continue
-        db = gamedb.GameList.cached_load(listname)
+        db = get_gamelist(lisname)
         for srcid, game in db.games.items():
             gameurl = 'gamelists/%s/%s/' % (db.name, srcid)
             screenshots += [(gameurl, game.name, game.author, screenshot) for screenshot in game.screenshots]
@@ -299,10 +312,9 @@ def render_page(content, title = 'OHR Archive', topnote = '', status = '200 OK')
     Put the content of a dynamic page in the generic template, and return it to the WGSI server.
     """
     reqinfo.set_header(status, [('Content-Type', 'text/html')])
-    reqinfo.footer_info += " Page rendered in %.3fs." % (util.timer() - reqinfo.start)
     return [encode(PAGE_TEMPLATE.format(
         content = content, title = title, root = URL_ROOTPATH,
-        topnote = topnote, footer_info = reqinfo.footer_info
+        topnote = topnote, footer_info = reqinfo.get_footer()
     ))]
 
 def templated_page(fname, title = 'OHR Archive', topnote = '', status = '200 OK', **kwargs):

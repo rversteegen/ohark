@@ -291,6 +291,8 @@ def render_game(listname, gameid, game):
     if game.screenshots:
         shots = '\n'.join(screenshot_box(shot) for shot in game.screenshots)
         ret += add_row("Screenshots", shots)
+    if game.error:
+        ret += add_row("Error messages", game.error)
     ret += add_row("Downloads", game.downloads)
     ret += add_row("Reviews", game.reviews)
     info = game.extra_info
@@ -359,13 +361,12 @@ def render_zip(zips_db, zipkey):
     topnote = util.link("/zips", "Back to index ...") + "\n"
     dbname, srcid, fname = zipkey
     title = "/".join(zipkey)
+    note = note2 = table_html = ""
     #title = '%s/%s/%s' % (dbname, srcid or '?', fname)
 
     if zipdata.unreadable:
         note = "This zip file is corrupt or could not be read (e.g. uses unusual compression)."
-        table_html = ""
     else:
-        note = ""
         lines = []
         for fname, size, mtime in sorted(zipdata.filelist):
             name = fname
@@ -374,16 +375,20 @@ def render_zip(zips_db, zipkey):
                 name = util.link("zips/%s/%s" % (zipkeystr, fname), name)
             if fname in zipdata.rpgs:
                 if zipdata.rpgs[fname] is None:
-                    # This game wasn't scanned, there was an error reading or extracting it.
-                    name += " (Corrupt!)"
+                    # This game couldn't even be hashed, there was an error while extracting files
+                    # from the zip (though not necessarily this file)
+                    pass
                 else:
                     name = util.link("gamelists/rpgs/%s/" % zipdata.rpgs[fname], name)
 
             lines.append( "<tr><td>%s</td><td>%s</td><td>%s</td></tr>\n" % (name, size, time.ctime(mtime)) )
         table_html = "".join(lines)
 
+    if zipdata.error:
+        note2 = "An error occurred while reading this .zip: " + zipdata.error
+
     format_strs = {'zipname': title, 'table': table_html, 'size': zipdata.size,
-                   'mtime': time.ctime(zipdata.mtime), 'note': note}
+                   'mtime': time.ctime(zipdata.mtime), 'note': note, 'note2': note2}
     return templated_page('zipinfo.html', topnote = topnote, title = 'OHR Archive - ' + title, **format_strs)
 
 def render_zips(zips_db):

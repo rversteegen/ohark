@@ -1,6 +1,7 @@
 """
 Should probably use a real DB, but for now we just use a pickled python object.
 """
+from __future__ import print_function
 import os
 import ctypes
 
@@ -24,7 +25,6 @@ SOURCES = {
     "rpgs": {'name': "Scanned .rpg files", 'is_gamelist': False},
 }
     # "bahamut",
-    # "opohr",
     # "ouya",
     # "steam",
 
@@ -172,6 +172,7 @@ class Game:
     fixbits = None          # Contents of the fixbits.bin lump (BinData object)
     website = None          # URL for an external website (often just author website)
     archives = None         # List of zipkeys (ids) of every zip file in which this game was found.
+    error = ""              # Any error message that occurred when processing the .rpg (errors extracting not included)
 
     def __init__(self):
         self.name = ""
@@ -250,14 +251,22 @@ class ScannedZipData:
 
     def __init__(self, zipinfo):
         """zipinfo is an ArchiveInfo object"""
-        self.unreadable = zipinfo.zip is None
+        self.error = zipinfo.error   # Any error message produced while trying to read, else ""
+        if self.error:
+            print("!! zipinfo error:", self.error)
+        self.unreadable = zipinfo.zip is None   # File is completely unreadable
         self.size = zipinfo.size
         self.mtime = zipinfo.mtime
+        # Proceed to read the list of files, even if zipinfo.error
+        # is set, which indicates at least one file is unreadable.
         if not self.unreadable:
             # Create .rpgs, the fname -> srcid mapping, by truncated the md5 hashs
             self.rpgs = dict(zipinfo.rpgs)
             for fname, hash in self.rpgs.items():
-                if hash:  # None if the game couldn't even be extracted
+                # hash is None if the game couldn't even be extracted,
+                # (or it might be missing entirely
+                # but is valid if the game was corrupt.
+                if hash:
                     self.rpgs[fname] = hash[:9]
             self.scripts = zipinfo.scripts
             self.filelist = []  # (fname, size, mtime) tuples
@@ -267,12 +276,13 @@ class ScannedZipData:
                 mtime = zipinfo.file_mtime(fname)
                 self.filelist.append((fname, size, mtime))
 
-                # Also grab small text files
-                extn = os.path.splitext(fname.lower())[1]
-                if 'readme' in fname.lower() or extn in ('.txt', '.hss'):
-                    # Filter out large files such as LICENSE-binary.txt
-                    if size < 15000 and '_debug' not in fname:
-                        self.files[fname] = scrape.auto_decode(zipinfo.zip.read(fname))
+                if not zipinfo.error:
+                    # Also grab small text files
+                    extn = os.path.splitext(fname.lower())[1]
+                    if 'readme' in fname.lower() or extn in ('.txt', '.hss'):
+                        # Filter out large files such as LICENSE-binary.txt
+                        if size < 15000 and '_debug' not in fname:
+                            self.files[fname] = scrape.auto_decode(zipinfo.zip.read(fname))
 
 
 class _GameIndex():

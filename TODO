@@ -5,6 +5,3 @@
 - There are 19 games on SS with .rar downloads. There are also some games with .tar.gz files,
   but those are just the Mac, and sometimes Linux, versions of games with an alternative
   download.
-
-- If an .rpg/rpgdir is corrupt it doesn't get added to any DB, but we should add it, marking
-  it as corrupt

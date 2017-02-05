@@ -4,12 +4,13 @@ This module builds a DB by scanning .zip files.
 It depends on nohrio (rpgbatch fork) and rpgbatch which need to be in the path.
 See http://rpg.hamsterrepublic.com/ohrrpgce/nohrio
 and tools/rpgbatch/rpgbatch.py in the OHRRPGCE repository.
-(https://rpg.hamsterrepublic.com/source/tools/rpgbatch/rpgbatch.py)
+(http://rpg.hamsterrepublic.com/source/tools/rpgbatch/rpgbatch.py)
 """
 from __future__ import print_function
 import os
 import sys
 import time
+import random
 import numpy as np
 import localsite
 import nohrio.ohrrpgce
@@ -33,18 +34,22 @@ def process_sources(db_name, sources):
         if isinstance(yielded, ArchiveInfo):
             # A zip file
             zipinfo = yielded
-            srcid = ""  # Unknown (TODO)
+            srcid = "%d" % random.randint(0,1000)  # Placeholder to avoid collisions (TODO)
             zipkey = (zipinfo.src, srcid, os.path.split(zipinfo.path)[1])
             print("Processing ZIP", zipkey)
             assert zipkey not in zips_db   # Shouldn't happen!
 
             zipdata = gamedb.ScannedZipData(zipinfo)
             zips_db[zipkey] = zipdata
+            if zipdata.unreadable:
+                continue   # We didn't read any games from this zip
 
             # Now that we've added this zip to the DB,
             # point every game in it to the DB entry for this zip file.
             for fname, gameid in zipdata.rpgs.items():
-                games_db.games[gameid].archives.append(zipkey)
+                # If the game was corrupt, then it didn't get added to the DB
+                if gameid in games_db.games:
+                    games_db.games[gameid].archives.append(zipkey)
             continue
 
         rpg, gameinfo, zipinfo = yielded

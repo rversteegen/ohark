@@ -251,12 +251,15 @@ class ScannedZipData:
     def __init__(self, zipinfo):
         """zipinfo is an ArchiveInfo object"""
         self.unreadable = zipinfo.zip is None
+        self.size = zipinfo.size
+        self.mtime = zipinfo.mtime
         if not self.unreadable:
-            # fname -> srcid (truncated md5 hash mapping)
-            self.rpgs = dict((fname, hash[:9]) for fname, hash in zipinfo.rpgs.items())
+            # Create .rpgs, the fname -> srcid mapping, by truncated the md5 hashs
+            self.rpgs = dict(zipinfo.rpgs)
+            for fname, hash in self.rpgs.items():
+                if hash:  # None if the game couldn't even be extracted
+                    self.rpgs[fname] = hash[:9]
             self.scripts = zipinfo.scripts
-            self.size = zipinfo.size
-            self.mtime = zipinfo.mtime
             self.filelist = []  # (fname, size, mtime) tuples
             self.files = {}     # Extracted files; fname -> contents mapping
             for fname in zipinfo.zip.namelist():

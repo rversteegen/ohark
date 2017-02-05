@@ -171,6 +171,7 @@ class Game:
     gen = None              # Contents of .gen lump (BinData object)
     fixbits = None          # Contents of the fixbits.bin lump (BinData object)
     website = None          # URL for an external website (often just author website)
+    archives = None         # List of zipkeys (ids) of every zip file in which this game was found.
 
     def __init__(self):
         self.name = ""
@@ -184,7 +185,7 @@ class Game:
         #self.download_count = None  # Number of times downloaded
         #self.rating = None          # Could be a number or a letter
         self.tags = []               # List of tags (strings)
-        #self.rpg_location           # Gives the path to the .rpg/rpgdir file inside the .zip, in case there is more than one
+        self.archives = []
 
     def get_name(self):
         return self.name or "(blank name)"
@@ -241,16 +242,18 @@ class GameList:
         DataBaseLayer.save(self.name, self.games)
 
 
-class ScannedZipInfo:
+class ScannedZipData:
     """
     This class holds information about a zip file.
     It's a picklable repackaging of some of the information in rpgbatch.ArchiveInfo
     """
 
     def __init__(self, zipinfo):
+        """zipinfo is an ArchiveInfo object"""
         self.unreadable = zipinfo.zip is None
         if not self.unreadable:
-            self.rpgs = zipinfo.rpgs  # fname -> md5 hash mapping
+            # fname -> srcid (truncated md5 hash mapping)
+            self.rpgs = dict((fname, hash[:9]) for fname, hash in zipinfo.rpgs.items())
             self.scripts = zipinfo.scripts
             self.size = zipinfo.size
             self.mtime = zipinfo.mtime

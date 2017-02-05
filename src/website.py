@@ -248,6 +248,23 @@ def screenshot_box(screenshot):
         content += '<div class="caption">%s</div>' % screenshot.description
     return '<div class="screenshot">%s</div>' % content
 
+def get_game_archives_info(game):
+    """
+    Generates the "Appears in" info for a game entry for an .rpg file, listing the .zips
+    or other locations where it appears.
+    """
+    archive_links = []
+    for zipkey in game.archives:
+        zipkeystr = ",".join(zipkey)
+        srcname, gameid, zip_fname = zipkey
+        link = util.link("zips/" + zipkeystr, zip_fname)
+        if srcname in gamedb.SOURCES:
+            link += " on " + gamedb.SOURCES[srcname]['name']
+        else:
+            link += " from collection '%s'" % srcname
+        archive_links.append(link)
+    return "<br/>".join(archive_links)
+
 def render_game(listname, gameid, game):
     """
     Generates a gamelists/<listname>/<gameid>/ page for a single game entry
@@ -263,8 +280,10 @@ def render_game(listname, gameid, game):
     ret += add_row("Author", util.link(game.author_link, game.get_author()))
     if game.url:
         ret += add_row("Original entry", util.link(game.url, gameid) + " on " + gamedb.SOURCES[listname]['name'])
-    else:
-        ret += add_row("Origin/ID", gameid)
+    # else:
+    #     ret += add_row("Origin/ID", gameid)
+    if game.archives:
+        ret += add_row("Appears in", get_game_archives_info(game))
     if game.website:
         ret += add_row("Website", util.link(game.website, game.website))
     ret += add_row("Description", game.description)
@@ -315,14 +334,14 @@ def render_zip_contents(zips_db, zipkey, fname):
     Display the contents of a file in a zip file that was saved when the file was scanned
     (small text files)
     """
-    zipinfo = zips_db[zipkey]
+    zipdata = zips_db[zipkey]
     zipkeystr = ",".join(zipkey)
 
     topnote = util.link("/zips/" + zipkeystr, "Back to %s..." % zipkey[2]) + "\n"
-    if fname not in zipinfo.files:
+    if fname not in zipdata.files:
         return notfound("That file is not available here; download the .zip yourself to view it.")
     ret = '<h1>%s/%s</h1>\n' % ("/".join(zipkey), fname)
-    ret += '<div class="textfile">%s</div>' % util.text2html(zipinfo.files[fname])
+    ret += '<div class="textfile">%s</div>' % util.text2html(zipdata.files[fname])
     return render_page(ret, title = fname, topnote = topnote)
 
 def render_zip(zips_db, zipkey):
@@ -334,7 +353,7 @@ def render_zip(zips_db, zipkey):
     (e.g. 12), and the specific zip file found in that entry
     (e.g. 'Darkmoor Dungeon.zip').
     """
-    zipinfo = zips_db[zipkey]
+    zipdata = zips_db[zipkey]
     zipkeystr = ",".join(zipkey)
 
     topnote = util.link("/zips", "Back to index ...") + "\n"
@@ -342,29 +361,29 @@ def render_zip(zips_db, zipkey):
     title = "/".join(zipkey)
     #title = '%s/%s/%s' % (dbname, srcid or '?', fname)
 
-    if zipinfo.unreadable:
+    if zipdata.unreadable:
         note = "This zip file is corrupt or could not be read (e.g. uses unusual compression)."
         table_html = ""
     else:
         note = ""
         lines = []
-        for fname, size, mtime in sorted(zipinfo.filelist):
+        for fname, size, mtime in sorted(zipdata.filelist):
             name = fname
-            if fname in zipinfo.files:
+            if fname in zipdata.files:
                 # We copied the contents of this file, provide a link to it
                 name = util.link("zips/%s/%s" % (zipkeystr, fname), name)
-            if fname in zipinfo.rpgs:
-                if zipinfo.rpgs[fname] is None:
+            if fname in zipdata.rpgs:
+                if zipdata.rpgs[fname] is None:
                     # This game wasn't scanned, there was an error reading or extracting it.
                     name += " (Corrupt!)"
                 else:
-                    name = util.link("dummy/" + fname, name)
+                    name = util.link("gamelists/rpgs/%s/" % zipdata.rpgs[fname], name)
 
             lines.append( "<tr><td>%s</td><td>%s</td><td>%s</td></tr>\n" % (name, size, time.ctime(mtime)) )
         table_html = "".join(lines)
 
-    format_strs = {'zipname': title, 'table': table_html, 'size': zipinfo.size,
-                   'mtime': time.ctime(zipinfo.mtime), 'note': note}
+    format_strs = {'zipname': title, 'table': table_html, 'size': zipdata.size,
+                   'mtime': time.ctime(zipdata.mtime), 'note': note}
     return templated_page('zipinfo.html', topnote = topnote, title = 'OHR Archive - ' + title, **format_strs)
 
 def render_zips(zips_db):

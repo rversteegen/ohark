@@ -35,25 +35,32 @@ def process_sources(db_name, sources):
             zipinfo = yielded
             srcid = ""  # Unknown (TODO)
             zipkey = (zipinfo.src, srcid, os.path.split(zipinfo.path)[1])
-            print("ZIP:", zipkey)
+            print("Processing ZIP", zipkey)
             assert zipkey not in zips_db   # Shouldn't happen!
-            zips_db[zipkey] = gamedb.ScannedZipInfo(zipinfo)
+
+            zipdata = gamedb.ScannedZipData(zipinfo)
+            zips_db[zipkey] = zipdata
+
+            # Now that we've added this zip to the DB,
+            # point every game in it to the DB entry for this zip file.
+            for fname, gameid in zipdata.rpgs.items():
+                games_db.games[gameid].archives.append(zipkey)
             continue
 
         rpg, gameinfo, zipinfo = yielded
-        #lumplist = [(lumpbasename(name, rpg), os.stat(name).st_size) for name in rpg.manifest]
+        gameid = gameinfo.hash[:9]
+
         # The filenames of .zips from Op:OHR contain URL %xx escape codes, need to remove
         # to get a gameid that can be part of a valid URL.
-        gameid = (gameinfo.src + ': ' + scrape.unquote(gameinfo.id).replace('/', '-')).lower().decode('latin-1')
+        #... however, this string is no longer used for anything
+        #verbose_game_id = (gameinfo.src + ': ' + scrape.unquote(gameinfo.id).replace('/', '-')).lower().decode('latin-1')
 
-        print("Processing RPG ", gameinfo.id, "as", gameid)
+        print("Processing RPG ", gameinfo.id, "from", gameinfo.src)
         print(" > ", gameinfo.longname, " --- ", gameinfo.aboutline)
 
         game = gamedb.Game()
-        game.name = gameinfo.longname
-        if not game.name:
-            game.name = gameinfo.rpgfile
-        game.name = game.name.decode('latin-1').strip()
+        game.src = gameinfo.src
+        game.name = (gameinfo.longname or gameinfo.rpgfile).decode('latin-1').strip()
         game.description = gameinfo.aboutline.decode('latin-1')
 
         if gameinfo.rpgfile.lower().endswith('.rpgdir'):
@@ -83,11 +90,12 @@ def process_sources(db_name, sources):
         info = [
             "Filename: " + gameinfo.rpgfile,
             "Size: %d KB" % (game.size / 1024),
+            "md5: " + gameinfo.hash,
             "Created by: " + rpg.archinym.version,
             "archinym: " + rpg.archinym.prefix,
         ]
-        if zipinfo and len(zipinfo.scripts):
-            info.append("Script files: " + str(zipinfo.scripts))
+        # if zipinfo and len(zipinfo.scripts):
+        #     info.append("Script files: " + str(zipinfo.scripts))
         game.extra_info = "\n".join(info)
 
         # Double-check that there are no undecoded strings

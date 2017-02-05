@@ -118,12 +118,14 @@ def handle_gamelists(path):
                 return notfound("Game %s/%s does not exist." % (listname, gameid))
             return render_game(listname, gameid, db.games[gameid])
 
+
 ################################################################################
 
 def render_gamelists():
     """
     Generate the gamelists/ page
     """
+    topnote = util.link("/", "Back to root ...") + "\n"
     ret = "<h1>Archived Gamelists</h1>\n"
     ret += "<p>The following gamelists have been imported:</p>\n<ul>"
     for src, info in sorted(gamedb.SOURCES.items()):
@@ -131,7 +133,7 @@ def render_gamelists():
             continue
         ret += '<li> <a href="gamelists/%s">%s</a> </li>\n' % (src, info['name'])
     ret += '</ul>'
-    return render_page(ret, title = 'OHR Archive - Gamelists')
+    return render_page(ret, title = 'OHR Archive - Gamelists', topnote = topnote)
 
 def gamelist_filter_game(game):
     """
@@ -292,7 +294,7 @@ def handle_gallery(path):
     for listname, listinfo in gamedb.SOURCES.items():
         if listinfo.get('hidden', False):
             continue
-        db = get_gamelist(lisname)
+        db = get_gamelist(listname)
         for srcid, game in db.games.items():
             gameurl = 'gamelists/%s/%s/' % (db.name, srcid)
             screenshots += [(gameurl, game.name, game.author, screenshot) for screenshot in game.screenshots]
@@ -304,6 +306,72 @@ def handle_gallery(path):
 
     return templated_page('gallery.html', images = ret, title = 'OHRRPGCE Gallery')
 
+################################################################################
+
+def render_zip(zipkey):
+    """
+    Generate a page showing the contents of a zip file.
+    zipkey is a triple (listname, srcid, zipname) which identify
+    the source gamelist/website (e.g. 'ss'), the source-specific game id
+    (e.g. 12), and the specific zip file found in that entry
+    (e.g. 'Darkmoor Dungeon.zip').
+    """
+    with reqinfo.DB_timer:
+        zips_db = gamedb.DataBaseLayer.cached_load('zips')
+    if zipkey not in zips_db:
+        return notfound("Invalid zip file ID.")
+    zipinfo = zips_db[zipkey]
+
+    topnote = util.link("/zips", "Back ...") + "\n"
+    dbname, srcid, fname = zipkey
+    title = '%s/%s/%s' % zipkey # (dbname, srcid or '?', fname)  
+
+    if zipinfo.unreadable:
+        note = "This zip file is corrupt or could not be read (e.g. uses unusual compression)."
+        table_html = ""
+    else:
+        note = ""
+        lines = []
+        for fname, size, mtime in sorted(zipinfo.filelist):
+            name = fname
+            if fname in zipinfo.files:
+                # We copied the contents of this file, provide a link to it
+                name = util.link("dummy/" + fname, name)
+            if fname in zipinfo.rpgs:
+                if zipinfo.rpgs[fname] is None:
+                    # This game wasn't scanned, there was an error reading or extracting it.
+                    name += " (Corrupt!)"
+                else:
+                    name = util.link("dummy/" + fname, name)
+
+            lines.append( "<tr><td>%s</td><td>%s</td><td>%s</td></tr>\n" % (name, size, time.ctime(mtime)) )
+        table_html = "".join(lines)
+
+    format_strs = {'zipname': title, 'table': table_html, 'size': zipinfo.size,
+                   'mtime': time.ctime(zipinfo.mtime), 'note': note}
+    return templated_page('zipinfo.html', topnote = topnote, title = 'OHR Archive - ' + title, **format_strs)
+
+def render_zips(path):
+    """
+    Show list of zips. This is for admin purposes, probably won't be public.
+    """
+    ## Placeholder
+
+    if len(path) > 1:
+        # placeholder
+        return render_zip(tuple(path[1].split(',')))
+
+    # Just show a simple table
+    with reqinfo.DB_timer:
+        zips_db = gamedb.DataBaseLayer.cached_load('zips')
+
+    ret = "<ul>"
+    for zipkey in zips_db:
+        linkname = ",".join(zipkey)
+        ret += "<li>%s</li>\n" % util.link("zips/" + linkname, linkname)
+    ret += "</ul>"
+
+    return render_page(ret)
 
 ################################################################################
 
@@ -401,5 +469,7 @@ def application(environ, start_response):
         return handle_gallery(path)
     elif path[0] == "games":
         return render_games(path)
+    elif path[0] == "zips":
+        return render_zips(path)
     else:
         return notfound(environ.get('PATH_INFO', '/') + " not found")

@@ -6,13 +6,14 @@ See http://rpg.hamsterrepublic.com/ohrrpgce/nohrio
 and tools/rpgbatch/rpgbatch.py in the OHRRPGCE repository.
 (https://rpg.hamsterrepublic.com/source/tools/rpgbatch/rpgbatch.py)
 """
+from __future__ import print_function
 import os
 import sys
 import time
 import numpy as np
 import localsite
 import nohrio.ohrrpgce
-from rpgbatch import RPGIterator, RPGInfo
+from rpgbatch import RPGIterator, RPGInfo, ArchiveInfo
 import scrape
 from gamedb import BinData
 
@@ -23,17 +24,30 @@ def process_sources(db_name, sources):
     Create and write a GameList.
     sources is a list of .rpg files, .rpgdir directories, .zip files, or directories containing any of these.
     """
-    db = gamedb.GameList(db_name)
+    games_db = gamedb.GameList(db_name)
+    zips_db = {}
 
-    rpgs = RPGIterator(sources)
-    for rpg, gameinfo, zipinfo in rpgs:
+    # Ask the iterator to yield both each game it finds, and each zip file it processes
+    iterator = RPGIterator(sources, yield_zips = True)
+    for yielded in iterator:
+        if isinstance(yielded, ArchiveInfo):
+            # A zip file
+            zipinfo = yielded
+            srcid = ""  # Unknown (TODO)
+            zipkey = (zipinfo.src, srcid, os.path.split(zipinfo.path)[1])
+            print("ZIP:", zipkey)
+            assert zipkey not in zips_db   # Shouldn't happen!
+            zips_db[zipkey] = gamedb.ScannedZipInfo(zipinfo)
+            continue
+
+        rpg, gameinfo, zipinfo = yielded
         #lumplist = [(lumpbasename(name, rpg), os.stat(name).st_size) for name in rpg.manifest]
         # The filenames of .zips from Op:OHR contain URL %xx escape codes, need to remove
         # to get a gameid that can be part of a valid URL.
         gameid = (gameinfo.src + ': ' + scrape.unquote(gameinfo.id).replace('/', '-')).lower().decode('latin-1')
 
-        print "Processing RPG ", gameinfo.id, "as", gameid
-        print " > ", gameinfo.longname, " --- ", gameinfo.aboutline
+        print("Processing RPG ", gameinfo.id, "as", gameid)
+        print(" > ", gameinfo.longname, " --- ", gameinfo.aboutline)
 
         game = gamedb.Game()
         game.name = gameinfo.longname
@@ -76,15 +90,15 @@ def process_sources(db_name, sources):
             info.append("Script files: " + str(zipinfo.scripts))
         game.extra_info = "\n".join(info)
 
-        db.games[gameid] = game
+        # Double-check that there are no undecoded strings
+        game = scrape.clean_strings(game)
 
-    rpgs.print_summary()
+        games_db.games[gameid] = game
 
-    # Double-check that there are no undecoded strings
-    game = scrape.clean_strings(game)
+    iterator.print_summary()
 
-    db.save()
-
+    games_db.save()
+    gamedb.DataBaseLayer.save('zips', zips_db)
 
 if len(sys.argv) < 2:
     sys.exit("Specify .rpg files, .rpgdir directories, .zip files, or directories containing any of these as arguments.")

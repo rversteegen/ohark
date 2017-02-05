@@ -59,6 +59,12 @@ td {
 table.game {
     padding: 10px 10px;
 }
+
+table.zipinfo td {
+
+    padding: 10px 25px;
+}
+
 .screenshot {
     float: left;
     padding: 0 1em 1em 0;

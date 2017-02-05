@@ -1,3 +1,7 @@
 
 - Game descriptions containing relative img tags (namely, smileys) should have the urls
   updated. For example  http://www.slimesalad.com/forum/viewgame.php?t=4630
+
+- There are 19 games on SS with .rar downloads. There are also some games with .tar.gz files,
+  but those are just the Mac, and sometimes Linux, versions of games with an alternative
+  download.

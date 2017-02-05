@@ -34,7 +34,9 @@ def process_sources(db_name, sources):
         if isinstance(yielded, ArchiveInfo):
             # A zip file
             zipinfo = yielded
-            srcid = "%d" % random.randint(0,1000)  # Placeholder to avoid collisions (TODO)
+            # The zip files on CP, SS, Op:OHR (by coincidence), Bahamut all have unique names.
+            # Others may not. So in these cases srcid can simply be left blank for convenience.
+            srcid = ""
             zip_fname = os.path.split(zipinfo.path)[1]
             # The filenames of .zips from Op:OHR contain URL %xx escape codes, need to remove
             # to get a string that can be part of a valid URL.

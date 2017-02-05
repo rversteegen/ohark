@@ -120,14 +120,13 @@ def render_gamelists():
     ret += '</ul>'
     return render_page(ret, title = 'OHR Archive - Gamelists')
 
-def gamelist_filter_game(db, gameid):
+def gamelist_filter_game(game):
     """
     Inspects the query part of the URL, and returns True if this
     game should be displayed on the game page
     """
     if 'tag' not in reqinfo.query:
         return True   # Show all games
-    game = db.games[gameid]
     # There can be multiple tags=... in the query; show a game
     # if any of them match
     for tag in reqinfo.query['tag']:
@@ -135,42 +134,75 @@ def gamelist_filter_game(db, gameid):
             return True
     return False
 
-def gamelist_describe_filter(listname):
+def gamelist_describe_filter():
     """
     Provide a piece of text telling which filter is currently active for the gamelist display.
     """
     if 'tag' not in reqinfo.query:
         return ""
     tags = ' or '.join('"%s"' % tag for tag in reqinfo.query['tag'])
+    backlink = reqinfo.path  #  Easy way to remove the query
     return ("Filtering for games with tag %s. Click %s to show all games."
-            % (tags, util.link("gamelists/" + listname, "here")))
+            % (tags, util.link(backlink, "here")))
 
 def render_gamelist(db):
     """
-    Generate one of the gamelists/X/ pages.
+    Generate one of the gamelists/<db.name>/ pages.
     """
     dbinfo = gamedb.SOURCES[db.name]
-    is_gamelist = dbinfo['is_gamelist']
-    topnote = util.link("gamelists/", "Back to gamelists ...") + "\n"
     # If there is a filter active, say so
-    filterinfo = gamelist_describe_filter(db.name)
+    filterinfo = gamelist_describe_filter()
+    numtotal = len(db.games)
 
+    keyed_games = []
+    for gameid, game in db.games.items():
+        # Filter out certain games
+        if gamelist_filter_game(game):
+            keyed_games.append((db.name, gameid, game))
+
+    return render_games_table(keyed_games, dbinfo['name'], dbinfo['is_gamelist'], filterinfo, numtotal)
+
+def render_games(path):
+    """
+    Generate the games/ page. Right now this simply combines all game lists.
+    """
+    keyed_games = []
+    numtotal = 0
+    for listname, listinfo in gamedb.SOURCES.items():
+        if listinfo.get('hidden'):
+            continue
+        db = gamedb.GameList.cached_load(listname)
+        numtotal += len(db.games)
+        for gameid, game in db.games.items():
+            # Filter out certain games
+            if gamelist_filter_game(game):
+                keyed_games.append((db.name, gameid, game))
+
+    # If there is a filter active, say so
+    filterinfo = gamelist_describe_filter()
+
+    return render_games_table(keyed_games, "All games", 0, filterinfo, numtotal)
+
+def render_games_table(keyed_games, list_title, is_gamelist, filterinfo, numtotal):
+    """
+    Generate a page with a table containing a list of games.
+
+    keyed_games:  This is a list of (dbname: str, srcid: str, game: Game) tuples.
+    list_title:   What title to put on the page
+    is_gamelist:  True if this is one of the imported game lists, not a list of .rpgs.
+    filterinfo:   Extra info shown at the top.
+    """
     # Generate a table as a list-of-lists, so it can be sorted
     if is_gamelist:
         headers = 'key', 'Name', 'Author', 'Link', 'Description'
     else:
         headers = 'File', 'Name', 'Description'
     table = []
-    for gameid, game in db.games.items():
-        # Filter out certain games
-        if not gamelist_filter_game(db, gameid):
-            continue
-
+    for dbname, gameid, game in keyed_games:
         row = []
         row.append( game.name.lower().strip() )  # sort key
-        #if is_gamelist:
-        row.append( gameid )           
-        row.append( util.link('gamelists/%s/%s/' % (db.name, gameid), game.get_name()) )
+        row.append( gameid )
+        row.append( util.link('gamelists/%s/%s/' % (dbname, gameid), game.get_name()) )
         if is_gamelist:
             #util.link(game.author_link, game.get_author())
             row.append( game.get_author() )
@@ -181,15 +213,17 @@ def render_gamelist(db):
     # Strip the sort key
     table = [x[1:] for x in table]
 
+    topnote = util.link("gamelists/", "Back to gamelists ...") + "\n"
+
     table_html = "<tr>" + "".join("<th>%s</th>" % title for title in headers) + "</tr>\n"
     lines = []
     for row in table:
         lines.append("<tr>" + "".join("<td>%s</td>" % item for item in row) + "</tr>\n")
     table_html += "".join(lines)
 
-    format_strs = {'listname': dbinfo['name'], 'table': table_html, 'filterinfo': filterinfo,
-                   'numshown': len(table), 'numtotal': len(db.games)}
-    return templated_page('gamelist.html', topnote = topnote, title = 'OHR Archive - ' + dbinfo['name'], **format_strs)
+    format_strs = {'listname': list_title, 'table': table_html, 'filterinfo': filterinfo,
+                   'numshown': len(table), 'numtotal': numtotal}
+    return templated_page('gamelist.html', topnote = topnote, title = 'OHR Archive - ' + list_title, **format_strs)
 
 def screenshot_box(screenshot):
     """Given a gamedb.Screenshot, return some HTML for it and its description, if any"""
@@ -328,7 +362,7 @@ def application(environ, start_response):
     global reqinfo
     reqinfo = RequestInfo(start_response)
 
-    path = environ.get('PATH_INFO', '/')
+    reqinfo.path = path = environ.get('PATH_INFO', '/')
     if path.startswith(URL_ROOTPATH):
         path = path[len(URL_ROOTPATH):]
     path = path.split('/')
@@ -353,5 +387,7 @@ def application(environ, start_response):
         return handle_gamelists(path)
     elif path[0] == "gallery":
         return handle_gallery(path)
+    elif path[0] == "games":
+        return render_games(path)
     else:
         return notfound(environ.get('PATH_INFO', '/') + " not found")

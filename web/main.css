@@ -22,6 +22,18 @@ h1 {
     margin: 0.5em 0.5em 0.5em 1em;
 }
 
+.footer {
+    color: #bbb;
+    padding: 35px 0 9px 0;
+    text-align: center;
+    font-size: 75%;
+}
+
+.heading {
+    font-weight: bold;
+    font-size: 110%;
+}
+
 li {
     padding: 0.2em 0.5em;
 }
@@ -56,13 +68,10 @@ td {
     padding: 10px 0px 10px 10px;
 }
 
+/********************************* Game pages ********************************/
+
 table.game {
     padding: 10px 10px;
-}
-
-table.zipinfo td {
-
-    padding: 10px 25px;
 }
 
 .screenshot {
@@ -87,6 +96,16 @@ table.zipinfo td {
     max-width: 640px;
 }
 
+.caption {
+    /*background-color: #383838;*/
+    border-width: 0 1px 3px 1px;
+    border-color: #777;
+    border-style: outset;
+    padding: 3px 2em;
+}
+
+/********************************** Gallery **********************************/
+
 .gallery img {
     /* Don't use crisp-edges, since (almost) never scaling up */
     /* I think inline only does something if the <img> is inside a div
@@ -96,22 +115,18 @@ table.zipinfo td {
     max-width: 320px;
 }
 
-.caption {
-    /*background-color: #383838;*/
-    border-width: 0 1px 3px 1px;
-    border-color: #777;
-    border-style: outset;
-    padding: 3px 2em;
+/********************************** Archives *********************************/
+
+table.zipinfo td {
+
+    padding: 10px 25px;
 }
 
-.footer {
-    color: #bbb;
-    padding: 35px 0 9px 0;
-    text-align: center;
-    font-size: 75%;
-}
-
-.heading {
-    font-weight: bold;
-    font-size: 110%;
+.textfile {
+    border-width: 3px;
+    border-color: #aaa;
+    border-style: dotted;
+    padding: 1em;
+    margin: 0.5em;
+    color: #eee;
 }

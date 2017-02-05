@@ -261,8 +261,9 @@ class ScannedZipInfo:
                 mtime = zipinfo.file_mtime(fname)
                 self.filelist.append((fname, size, mtime))
 
-                # Also grab text files
-                if 'readme' in fname.lower() or fname.lower().endswith('.txt'):
+                # Also grab small text files
+                extn = os.path.splitext(fname.lower())[1]
+                if 'readme' in fname.lower() or extn in ('.txt', '.hss'):
                     # Filter out large files such as LICENSE-binary.txt
                     if size < 15000 and '_debug' not in fname:
                         self.files[fname] = scrape.auto_decode(zipinfo.zip.read(fname))

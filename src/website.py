@@ -139,25 +139,33 @@ def gamelist_filter_game(game):
     Inspects the query part of the URL, and returns True if this
     game should be displayed on the game page
     """
-    if 'tag' not in reqinfo.query:
-        return True   # Show all games
-    # There can be multiple tags=... in the query; show a game
-    # if any of them match
-    for tag in reqinfo.query['tag']:
-        if tag in game.tags:
-            return True
-    return False
+    if 'tag' in reqinfo.query:
+        # There can be multiple tags=... in the query; show a game
+        # if any of them match
+        for tag in reqinfo.query['tag']:
+            if tag in game.tags:
+                break
+        else:
+            return False
+    if 'author' in reqinfo.query:
+        if game.author not in reqinfo.query['author']:
+            return False
+    return True
 
 def gamelist_describe_filter():
     """
     Provide a piece of text telling which filter is currently active for the gamelist display.
     """
-    if 'tag' not in reqinfo.query:
+    filters = []
+    if 'tag' in reqinfo.query:
+        filters.append("tags " + " or ".join('"%s"' % tag for tag in reqinfo.query['tag']))
+    if 'author' in reqinfo.query:
+        filters.append("author " + " or ".join('"%s"' % author for author in reqinfo.query['author']))
+    if not filters:
         return ""
-    tags = ' or '.join('"%s"' % tag for tag in reqinfo.query['tag'])
     backlink = reqinfo.path  #  Easy way to remove the query
-    return ("Filtering for games with tag %s. Click %s to show all games."
-            % (tags, util.link(backlink, "here")))
+    return ("Filtering for games with %s. Click %s to show all games."
+            % (", and ".join(filters), util.link(backlink, "here")))
 
 def render_gamelist(db):
     """
@@ -316,8 +324,9 @@ def handle_gallery(path):
             continue
         db = gamedb.GameList.load(listname)
         for srcid, game in db.games.items():
-            gameurl = 'gamelists/%s/%s/' % (db.name, srcid)
-            screenshots += [(gameurl, game.name, game.author, screenshot) for screenshot in game.screenshots]
+            if gamelist_filter_game(game):
+                gameurl = 'gamelists/%s/%s/' % (db.name, srcid)
+                screenshots += [(gameurl, game.name, game.author, screenshot) for screenshot in game.screenshots]
 
     random.shuffle(screenshots)
     ret = ''

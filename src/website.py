@@ -276,6 +276,31 @@ def get_game_archives_info(game):
         archive_links.append(link)
     return "<br/>".join(archive_links)
 
+def get_game_downloads_info(game):
+    """
+    Generates the contents of the Downloads section of a game listing.
+    """
+    download_lines = []
+    for downloadlink in game.downloads:
+        entry = downloadlink.title or downloadlink.fname
+        zipdata = downloadlink.load_zipdata()
+        if zipdata:
+            entry += " - " + util.link(downloadlink.internal(), "[info]")
+        else:
+            entry += " - " + "[not processed]"
+        if downloadlink.external:
+            entry += " " + util.link(downloadlink.external, "[external download]")
+        if zipdata:
+            size = util.format_filesize(zipdata.size)
+        else:
+            size = downloadlink.sizestr  # Might be ""
+        if size:
+            entry += " (" + size + ")"
+        if downloadlink.description:
+            entry += " - " + downloadlink.description
+        download_lines.append(entry)
+    return '<br/>'.join(download_lines)
+
 def render_game(listname, gameid, game):
     """
     Generates a gamelists/<listname>/<gameid>/ page for a single game entry
@@ -304,7 +329,7 @@ def render_game(listname, gameid, game):
         ret += add_row("Screenshots", shots)
     if game.error:
         ret += add_row("Error messages", game.error)
-    ret += add_row("Downloads", game.downloads)
+    ret += add_row("Downloads", get_game_downloads_info(game))
     ret += add_row("Reviews", game.reviews)
     info = game.extra_info
     if game.gen:
@@ -454,7 +479,7 @@ def handle_zips(path):
         # Index
         return render_zips(zips_db)
     else:
-        zipkey = tuple(path[1].split(','))
+        zipkey = tuple(path[1].split(',', 2))  # Allow , in the filename
 
         if zipkey not in zips_db:
             return notfound("Invalid zip file ID.")

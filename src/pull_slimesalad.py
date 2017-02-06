@@ -14,7 +14,11 @@ if py2:
 else:
     from io import StringIO
 
-def process_game_page(url):
+
+# This is optional (OK to fail loading); used for double checking downloads match
+zips_db = gamedb.DataBaseLayer.load('zips')
+
+def process_game_page(url, gameinfo = None):
     dom = scrape.get_page(url, 'windows-1252')
 
     #Every game on SS has *four* valid links, for example:
@@ -53,15 +57,56 @@ def process_game_page(url):
     game.description = scrape.tag_contents(descrip_tag)
 
     # Downloads
-    for tag in dom.find_all('a', href=re.compile('download\.php')):
-        #print(list(tag.next_siblings))
-        info, descrip_tag, _ = tag.next_siblings
+    # Have to match up the downloads on gamedump.php (with the mtimes and
+    # actual download links) with the entries on the game page (with the descriptions).
+    # The order in which the downloads appear in gamedump.php is mostly sorted by ascending
+    # download id (which is not shown), but sometimes differs (probably when multiple
+    # downloads were uploaded at once).
+    # The order the downloads appear on the page is usually but not always
+    # (e.g. http://www.slimesalad.com/forum/viewgame.php?t=220) the opposite order
+    # (again, multi-uploads seem to cause some permutations).
+    # So the kludge is to first match up the download names, and assume multiple downloads
+    # with the same name were uploaded separately, and rely on the order of them being
+    # opposite in the two lists.
+    download_tags = dom.find_all('a', href=re.compile('download\.php'))
+    def download_id(a_tag):
+        ret = int(util.remove_sid(a_tag['href']).split('id=')[1])
+        return ret
+    #download_tags.sort(key = download_id)   # This also works instead of inverting
+    download_tags = download_tags[::-1]
+
+    for a_tag, gamefile in zip(download_tags, gameinfo.files):
+        info, descrip_tag, _ = a_tag.next_siblings
+        print("  ", gamefile.name, download_id(a_tag), a_tag.b.string)
+
+    # Sometimes e.g. http://www.slimesalad.com/forum/viewgame.php?t=5996
+    # an image is listed as a download, so doesn't appear in gameinfo.files
+    #assert len(gameinfo.files) == len(download_tags)
+    for a_tag in download_tags:
+        info, descrip_tag, _ = a_tag.next_siblings
         # info is e.g. "(37.5 KB; downloaded 351 times)"
-        download_count = int(info.split()[-2])
-        download = (urljoin(url, util.remove_sid(tag['href'])),
-                    tostr(tag.b.string),  # title of the download
-                    download_count,
-                    tostr(descrip_tag.string))
+        info = info.split()
+        download_url = urljoin(url, util.remove_sid(a_tag['href']))
+        # The title of the download displayed on the page is the original
+        # file name, need to use gamedump.php to find the mangled name.
+        title = tostr(a_tag.b.string)  # Display name
+        if gameinfo:
+            gamefile = gameinfo.file_by_name(title)
+            if gamefile in gameinfo.files:   # it might be in gameinfo.pics instead
+                gameinfo.files.remove(gamefile)
+            assert gamefile.name == title
+            zip_fname = gamefile.url.split('/')[-1]
+        else:
+            zip_fname = title
+        download = gamedb.DownloadLink('ss', '', zip_fname, download_url, title)
+        download.count = int(info[-2])
+        download.sizestr = info[0][1:] + ' ' + info[1][:-1]
+        download.description = descrip_tag.string and tostr(descrip_tag.string)
+
+        if zips_db and download.zipkey() in zips_db:
+            # Double check we matched the files correcting by checking the sizes match
+            expected = util.format_filesize(zips_db[download.zipkey()].size)
+            assert download.sizestr == expected
         game.downloads.append(download)
 
     # Grab screenshots
@@ -97,7 +142,7 @@ def process_index_page(url, limit = 9999):
     file = StringIO(page)
     for chunk in ChunkReader(file).each():
         game = GameInfo(chunk)
-        process_game_page(game.url)
+        process_game_page(game.url, game)
         limit -= 1
         if limit <= 0:
             break

@@ -83,6 +83,27 @@ def create_file(path):
     with open(path, "a"):
         pass
 
+def format_filesize(size):
+    """Format a file size, e.g. to '2.5 MB'.
+    Do this in exactly the same way as Slime Salad."""
+    def form(x):
+        ret = "%.2f" % x
+        # Trim leading zeroes
+        if '.' in ret:
+            while ret.endswith('0'):
+                ret = ret[:-1]
+                if ret.endswith('.'):
+                    ret = ret[:-1]
+                    break
+        return ret
+    if size > 1024**3:
+        return "%s GB" % form(size / 1024.**3)
+    elif size > 1024**2:
+        return "%s MB" % form(size / 1024.**2)
+    elif size > 1024:
+        return "%s KB" % form(size / 1024.)
+    return "%d B" % size
+
 def strip_strings(strings):
     """Given a list of strings, strip them""" # and remove whitespace-only strings"""
     return [x.strip() for x in strings]

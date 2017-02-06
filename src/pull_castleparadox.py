@@ -46,7 +46,10 @@ def process_game_page(url):
     # Download optional
     download_link = dom.find('a', string=re.compile('Download: '))
     if download_link:
-        game.downloads = urljoin(url, download_link['href'])
+        # The text for the download link is e.g. "Download: 3.87 MB"
+        download = gamedb.DownloadLink('cp', '', srcid + '.zip', urljoin(url, download_link['href']))
+        download.sizestr = tostr(download_link.string[10:])
+        game.downloads.append(download)
 
     # Grab download count and rating
     download_count = dom.find_all(string=re.compile('Download count: '))[0]

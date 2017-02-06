@@ -146,6 +146,7 @@ class DataBaseLayer:
             item.mtime = os.stat(fname).st_mtime
             cls.cache[source_name] = item
 
+
 class Screenshot:
     def __init__(self, url, local_path, description = ""):
         self.url = url                 # URL for the original copy
@@ -160,6 +161,50 @@ class Screenshot:
 
     def __repr__(self):
         return 'Screenshot<%s, %s>' % (self.local_path.split('/')[-1], self.description or "")
+
+
+class DownloadLink:
+    """
+    Info about a download link on a game entry. May point to an element of the 'zips' DB.
+    """
+    def __init__(self, listname, srcid, fname, external, title = ""):
+        self.listname = listname # The ID of the gamelist, eg 'ss'
+        self.fname = fname       # The actual zip filename
+        self.srcid = srcid       # The srcid of the game. Optional and not currently used.
+        self.external = external # Official download link (may increase download counter!)
+        self.title = title       # Only used on some sites, like SS (where it's the original zip fname)
+        self.description = ""
+        self.download_count = None # Number of downloads; usually useless
+        self.sizestr = ""        # Size of the download as a string. The ScannedZipData has the real size
+
+    def zipkey(self):
+        "The key used to find this file in the 'zips' DB"
+        return (self.listname, self.srcid, self.fname)
+
+    def zipkeystr(self):
+        "The ID for this zip used in URLs"
+        # FIXME: it's confusing to have two different formats for the key
+        # as either a tuple or a string
+        return ','.join(self.zipkey())
+
+    def load_zipdata(self):
+        "Returns the corresponding ScannedZipData object from DB, or None"
+        if self.fname:
+            zips_db = DataBaseLayer.load('zips')
+            return zips_db.get(self.zipkey())
+
+    def internal(self):
+        if self.fname:
+            return 'zips/' + self.zipkeystr()
+
+    # def internal_link(self):
+    #     "Generate a link to our page for this download, or None"
+    #     if self.fname:
+    #         return util.link(self.internal(), self.title or self.fname)
+
+    def __repr__(self):
+        return 'Download<%s %s>' % (self.zipkeystr(), self.title)
+
 
 class Game:
     """
@@ -258,8 +303,8 @@ class ScannedZipData:
         if self.error:
             print("!! zipinfo error:", self.error)
         self.unreadable = zipinfo.zip is None   # File is completely unreadable
-        self.size = zipinfo.size
-        self.mtime = zipinfo.mtime
+        self.size = zipinfo.size    # Always valid
+        self.mtime = zipinfo.mtime  # Always valid
         # Proceed to read the list of files, even if zipinfo.error
         # is set, which indicates at least one file is unreadable.
         if not self.unreadable:

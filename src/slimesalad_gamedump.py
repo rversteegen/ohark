@@ -9,7 +9,6 @@ mirrordir = "./slimesalad/"
 #----------------------------------------------------------------------
 
 import os
-#import urllib2
 from datetime import datetime
 import time
 import re
@@ -86,7 +85,7 @@ class GameDumpReader(object):
 
     def __init__(self, url, local):
         #print "Fetching ", url
-        f = urllib2.urlopen(url)
+        f = urlimp.urlopen(url)
         cr = ChunkReader(f)
         for chunk in cr.each():
            game = GameInfo(chunk)
@@ -186,7 +185,7 @@ def download(url, local_file):
     print("downloading %s %s" % (os.path.basename(local_file), url))
     if not os.path.isdir(folder):
         os.mkdir(folder)
-    input = urllib2.urlopen(url)
+    input = urlimp.urlopen(url)
     output = open(local_file, "wb")
     output.write(input.read())
     output.close()

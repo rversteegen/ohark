@@ -10,7 +10,7 @@ import re
 from bs4 import BeautifulSoup, NavigableString
 
 import scrape
-from scrape import urljoin
+import urlimp
 import gamedb
 import util
 from util import py2, tostr
@@ -29,7 +29,7 @@ def process_game_page(url):
 
     assert '?username=' in url and len(url.split('=')) == 2, "Expected only one query in page url, 'username'"
     # Have to DOUBLE unquote
-    srcid = scrape.unquote(scrape.unquote(url.split('=')[1])).decode(encoding)
+    srcid = urlimp.unquote(urlimp.unquote(url.split('=')[1])).decode(encoding)
 
     game = gamedb.Game()
 
@@ -72,7 +72,7 @@ def process_index_page(url, limit = 9999):
     for tag in dom.find_all('a'):
         if tag['href'] and tag['href'].startswith('gamelist-display.php'):
             # The first <a> is the link to the game, the second is the author
-            gameurl = scrape.urljoin(url, tag['href'])
+            gameurl = urlimp.urljoin(url, tag['href'])
             print(gameurl)
             process_game_page(gameurl)
             #time.sleep(0.1)

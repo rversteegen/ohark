@@ -8,7 +8,7 @@ import re
 from bs4 import BeautifulSoup, NavigableString
 
 import scrape
-from scrape import urljoin
+from urlimp import urljoin
 import gamedb
 import util
 from util import py2, tostr
@@ -82,7 +82,7 @@ def process_index_page(url, limit = 9999):
     container = dom.find('td', width='410')
     for tag in container.find_all('th'):
         # The first <a> is the link to the game, the second is the author
-        gameurl = scrape.urljoin(url, util.remove_sid(tag.a['href']))
+        gameurl = urljoin(url, util.remove_sid(tag.a['href']))
         process_game_page(gameurl)
         #time.sleep(0.1)
         limit -= 1

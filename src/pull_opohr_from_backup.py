@@ -12,7 +12,7 @@ from collections import defaultdict
 import shutil
 
 import scrape
-from scrape import urljoin
+import urlimp
 import gamedb
 import util
 from util import py2, tostr
@@ -62,7 +62,7 @@ def process_game(dirname, path):
         return
 
     game = gamedb.Game()
-    gamename = fix_escapes(scrape.unquote(dirname.decode(encoding)))
+    gamename = fix_escapes(urlimp.unquote(dirname.decode(encoding)))
     srcid = util.partial_escape(gamename)
     game.name = gamename.strip()   # One game has trailing whitespace
 
@@ -105,7 +105,7 @@ def process_game(dirname, path):
 
     # Note that we quote it once, and the browser will quote it a second time, as required.
     # Note: there's a game that doesn't show up on the gamelist, '?', but does have a page
-    game.url = OPOHR_URL + 'gamelist-display.php?username=' + scrape.quote(dirname)
+    game.url = OPOHR_URL + 'gamelist-display.php?username=' + urlimp.quote(dirname)
 
     game.author = fix_escapes(getdata('.aut').decode(encoding))
     if not game.author:
@@ -124,9 +124,9 @@ def process_game(dirname, path):
     status = getdata('.sta')
     if '.zip' in by_extn:
         assert len(by_extn['.zip']) == 1
-        zipfile = scrape.unquote(by_extn['.zip'][0])
+        zipfile = urlimp.unquote(by_extn['.zip'][0])
         # Note that dirname and filename are quoted twice in download_url
-        download_url = OPOHR_URL + scrape.quote('gamelist/%s/%s' % (dirname, by_extn['.zip'][0]))
+        download_url = OPOHR_URL + urlimp.quote('gamelist/%s/%s' % (dirname, by_extn['.zip'][0]))
         game.downloads = [gamedb.DownloadLink('opohr', '', zipfile, download_url)]
         if status == "No demo":
             print(" %s: Status '%s' but game has a download" % (gamename, status))
@@ -143,7 +143,7 @@ def process_game(dirname, path):
         # Copy each screenshot to this game's data directory, and register it
         datadir = game.create_datadir(db.name)
         filename = os.path.join(datadir, screenshot)
-        screenshot_url = OPOHR_URL + 'gamelist/' + scrape.quote(dirname + '/' + screenshot)
+        screenshot_url = OPOHR_URL + 'gamelist/' + urlimp.quote(dirname + '/' + screenshot)
         shutil.copy2(os.path.join(path, screenshot), filename)
         game.screenshots.append(gamedb.Screenshot(screenshot_url, filename))
 

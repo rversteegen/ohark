@@ -12,6 +12,7 @@ import re
 import os.path
 import posixpath
 
+from urlimp import urlparse, urlencode, urlopen, urlretrieve
 import util
 from util import py2, tostr
 import gamedb
@@ -22,15 +23,6 @@ import gamedb
 #     # For printing unicode to console (otherwise encoding is 'ascii' so unicode can't be encoded)
 #     import codecs
 #     sys.stdout = codecs.getwriter('utf-8')(sys.stdout)
-
-if py2:
-    from urlparse import urlparse, urljoin, parse_qs
-    from urllib import urlretrieve, quote, unquote, urlencode
-    from urllib2 import urlopen, HTTPError
-else:
-    from urllib.parse import urlparse, urljoin, quote, unquote, urlencode, parse_qs
-    from urllib.request import urlopen, urlretrieve
-    from urllib.error import HTTPError
 
 try:
     from mod_python import apache

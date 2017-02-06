@@ -6,7 +6,7 @@ from __future__ import print_function
 import time
 
 import scrape
-from scrape import urljoin
+from urlimp import urljoin
 import gamedb
 import util
 from util import py2, tostr

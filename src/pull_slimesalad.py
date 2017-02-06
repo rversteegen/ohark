@@ -3,7 +3,8 @@ from __future__ import print_function
 import re
 
 import scrape
-from scrape import urljoin
+import urlimp
+from urlimp import urljoin
 import gamedb
 import util
 from util import py2, tostr
@@ -154,12 +155,12 @@ def srcid_for_SS_link(url):
     Given a link to a game on SS, returns the srcid for the
     game, or None if it's not a link to a game.
     """
-    parsed = scrape.urlparse(url)
+    parsed = urlimp.urlparse(url)
     if (parsed.netloc != "www.slimesalad.com"
         or parsed.path not in ("/forum/viewtopic.php", "/forum/viewgame.php")):
         return None
 
-    query = scrape.parse_qs(parsed.query)  # Parse to dict containing lists of values
+    query = urlimp.parse_qs(parsed.query)  # Parse to dict containing lists of values
     if 't' in query:
         topicnum = int(query['t'][0])
         if topicnum not in link_db['t2p']:

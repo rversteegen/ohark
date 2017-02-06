@@ -40,7 +40,7 @@ def process_sources(db_name, sources):
             zip_fname = os.path.split(zipinfo.path)[1]
             # The filenames of .zips from Op:OHR contain URL %xx escape codes, need to remove
             # to get a string that can be part of a valid URL.
-            zip_fname = scrape.unquote(zip_fname).decode('latin-1')
+            zip_fname = urlimp.unquote(zip_fname).decode('latin-1')
 
             zipkey = (zipinfo.src, srcid, zip_fname)
             print("Processing ZIP", zipkey)

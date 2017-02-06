@@ -14,16 +14,12 @@ import random
 import localsite
 #import tabulate
 
+import urlimp
 import util
 from util import py2
 import gamedb
 import inspect_rpg
 import pull_slimesalad
-
-if py2:
-    from urllib import urlencode
-else:
-    from urllib.parse import urlencode
 
 
 # mod_python_wsgi doesn't really set the path variables so that it's

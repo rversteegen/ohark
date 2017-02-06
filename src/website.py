@@ -49,10 +49,12 @@ with open(STATIC_ROOT + 'page_template.html', 'r') as temp:
 
 class RequestInfo:
     def __init__(self, start_response):
+        "Initialise self and global variables for a new request"
         self.req_timer = util.Timer().start()  # Time the total time spent handling the request
         self.set_header = start_response
         self.footer_info = ''
         self.DB_timer = util.Timer()  # Time DB loads
+        gamedb.DataBaseLayer.reqinfo = self  # Make DB_timer available to DB code
 
     def get_footer(self):
         ret = self.footer_info
@@ -65,9 +67,6 @@ class RequestInfo:
 
 reqinfo = RequestInfo(None)  # dummy
 
-def get_gamelist(listname):
-    with reqinfo.DB_timer:
-        return gamedb.GameList.cached_load(listname)
 
 ################################################################################
 
@@ -82,8 +81,7 @@ def handle_game_aliases(path, db):
     # ss/p=###/..., where p=### is taken from a game URL, as an alias,
     listname, gameid = path[1], path[2]
     if listname == 'ss' and gameid.startswith('p='):
-        with reqinfo.DB_timer:
-            link_db = gamedb.DataBaseLayer.cached_load('ss_links')
+        link_db = gamedb.DataBaseLayer.load('ss_links')
         srcid = link_db['p2t'].get(int(gameid[2:]))
         if not srcid:
             return None
@@ -101,7 +99,7 @@ def handle_gamelists(path):
         return render_gamelists()
     else:
         listname = path[1]
-        db = get_gamelist(listname)
+        db = gamedb.GameList.load(listname)
         if not db:
             return notfound("Game list %s does not exist." % listname)
 
@@ -187,7 +185,7 @@ def render_games(path):
     for listname, listinfo in gamedb.SOURCES.items():
         if listinfo.get('hidden'):
             continue
-        db = get_gamelist(listname)
+        db = gamedb.GameList.load(listname)
         numtotal += len(db.games)
         for gameid, game in db.games.items():
             # Filter out certain games
@@ -316,7 +314,7 @@ def handle_gallery(path):
     for listname, listinfo in gamedb.SOURCES.items():
         if listinfo.get('hidden', False):
             continue
-        db = get_gamelist(listname)
+        db = gamedb.GameList.load(listname)
         for srcid, game in db.games.items():
             gameurl = 'gamelists/%s/%s/' % (db.name, srcid)
             screenshots += [(gameurl, game.name, game.author, screenshot) for screenshot in game.screenshots]
@@ -408,8 +406,7 @@ def handle_zips(path):
     """
     Handle all URLs below zips/
     """
-    with reqinfo.DB_timer:
-        zips_db = gamedb.DataBaseLayer.cached_load('zips')
+    zips_db = gamedb.DataBaseLayer.load('zips')
     if len(path) == 1:
         # Index
         print("index", path)

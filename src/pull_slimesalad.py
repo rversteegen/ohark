@@ -102,7 +102,7 @@ def process_index_page(url, limit = 9999):
         if limit <= 0:
             break
 
-link_db = gamedb.DataBaseLayer.cached_load('ss_links')
+link_db = gamedb.DataBaseLayer.load('ss_links')
 
 def srcid_for_SS_link(url):
     """

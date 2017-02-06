@@ -69,6 +69,15 @@ class DataBaseLayer:
         "Has two members: .db and .mtime"
 
     cache = {}
+    reqinfo = None  # A RequestInfo object
+
+    @classmethod
+    def _get_timer(cls):
+        if cls.reqinfo:
+            return cls.reqinfo.DB_timer
+        else:
+            # Use dummy timer if one hasn't been set.
+            return util.Timer()
 
     @classmethod
     def db_filename(cls, source_name):
@@ -99,49 +108,43 @@ class DataBaseLayer:
     @classmethod
     def load(cls, source_name):
         """
-        Loads from saved database with the given name if already exists, otherwise returns None.
+        Loads (with caching) from saved database with the given name if already exists, otherwise returns None.
         """
-        item = cls._load(source_name)
-        if not item:
-            return None
-        return item.db
+        with cls._get_timer():
+            fname = cls.db_filename(source_name)
 
-    @classmethod
-    def cached_load(cls, source_name):
-        """Drop-in replacement for .load(), which does caching"""
-        fname = cls.db_filename(source_name)
+            if source_name in cls.cache:
+                # Check if the DB has changed since
+                if not os.path.isfile(fname):
+                    del cls.cache[source_name]
+                    return None
 
-        if source_name in cls.cache:
-            # Check if the DB has changed since
-            if not os.path.isfile(fname):
-                del cls.cache[source_name]
-                return None
+                mtime = os.stat(fname).st_mtime
+                if mtime != cls.cache[source_name].mtime:
+                    print("Dropped out-of-date cached DB")
+                    del cls.cache[source_name]
 
-            mtime = os.stat(fname).st_mtime
-            if mtime != cls.cache[source_name].mtime:
-                print("Dropped out-of-date cached DB")
-                del cls.cache[source_name]
-
-        if source_name not in cls.cache:
-            db = cls._load(source_name)
-            if not db:
-                return None
-            cls.cache[source_name] = db
-        return cls.cache[source_name].db
+            if source_name not in cls.cache:
+                db = cls._load(source_name)
+                if not db:
+                    return None
+                cls.cache[source_name] = db
+            return cls.cache[source_name].db
 
     @classmethod
     def save(cls, source_name, db):
         """
         Save to file, and place in the cache.
         """
-        util.mkdir(DB_DIR)
-        fname = cls.db_filename(source_name)
-        with open(fname, 'wb') as dbfile:
-            pickle.dump(db, dbfile, 2)  # protocol 2 for python 2 compat
-        item = cls.CacheItem()
-        item.db = db
-        item.mtime = os.stat(fname).st_mtime
-        cls.cache[source_name] = item
+        with cls._get_timer():
+            util.mkdir(DB_DIR)
+            fname = cls.db_filename(source_name)
+            with open(fname, 'wb') as dbfile:
+                pickle.dump(db, dbfile, 2)  # protocol 2 for python 2 compat
+            item = cls.CacheItem()
+            item.db = db
+            item.mtime = os.stat(fname).st_mtime
+            cls.cache[source_name] = item
 
 class Screenshot:
     def __init__(self, url, local_path, description = ""):
@@ -226,10 +229,10 @@ class GameList:
         self.games = dict()
 
     @classmethod
-    def cached_load(cls, source_name):
+    def load(cls, source_name):
         """Loads from saved database with the given name if already exists, otherwise returns None."""
         # There's no good reason that just .games is saved...
-        games = DataBaseLayer.cached_load(source_name)
+        games = DataBaseLayer.load(source_name)
         if not games:
             return None
         ret = cls(source_name)

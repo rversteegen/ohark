@@ -15,11 +15,16 @@ import localsite
 #import tabulate
 
 import util
+from util import py2
 import gamedb
 import inspect_rpg
 import pull_slimesalad
 
-py2 = sys.version_info[0] == 2
+if py2:
+    from urllib import urlencode
+else:
+    from urllib.parse import urlencode
+
 
 # mod_python_wsgi doesn't really set the path variables so that it's
 # possible to see where we are...
@@ -314,12 +319,12 @@ def render_game(listname, gameid, game):
 
 def handle_gallery(path):
     """
-    Generate a page of random screenshots.
+    Generate a page of screenshots. Randomly sorted or paged.
     path is ignored.
     """
     screenshots = []
 
-    for listname, listinfo in gamedb.SOURCES.items():
+    for listname, listinfo in sorted(gamedb.SOURCES.items()):
         if listinfo.get('hidden', False):
             continue
         db = gamedb.GameList.load(listname)
@@ -328,12 +333,41 @@ def handle_gallery(path):
                 gameurl = 'gamelists/%s/%s/' % (db.name, srcid)
                 screenshots += [(gameurl, game.name, game.author, screenshot) for screenshot in game.screenshots]
 
-    random.shuffle(screenshots)
-    ret = ''
-    for gameurl, gamename, gameauthor, screenshot in screenshots[:20]:
+    pagesize = int(reqinfo.query.get('pagesize', [16])[0])
+    info = 'Found %s screenshots. ' % len(screenshots)
+
+    def page_url(page = None, random = False):
+        """Generate URL for a certain page, or for the random page.
+        Preserves the existing query (search terms)."""
+        newquery = reqinfo.query.copy()
+        newquery.pop('page', None)   # Remove these
+        newquery.pop('random', None)
+        if page is not None:
+            newquery['page'] = page
+        if random:
+            newquery['random'] = ''
+        return reqinfo.path + '?' + urlencode(newquery, doseq = True)
+
+    if 'random' in reqinfo.query:
+        random.shuffle(screenshots)
+        info += "Randomised. " + util.link(page_url(random = True), "Reload") + " to see more! "
+        nextpage = 0
+        titletext = "Random Gallery"
+    else:
+        page = int(reqinfo.query.get('page', [0])[0])
+        screenshots = screenshots[page * pagesize : (page + 1) * pagesize]
+        info += "%s. Page %s. " % (util.link(page_url(random = True), "Randomise"), page)
+        nextpage = page + 1
+        titletext = "Gallery"
+    info += util.link(page_url(page = nextpage), "Go to page %d" % nextpage) + "."
+
+    topnote = util.link("/", "Back to root ...") + "\n"
+    ret = "<p>" + info + "</p>"
+    for gameurl, gamename, gameauthor, screenshot in screenshots[:pagesize]:
         ret += util.link(gameurl, screenshot.img_tag('%s by %s' % (gamename, gameauthor)))
 
-    return templated_page('gallery.html', images = ret, title = 'OHRRPGCE Gallery')
+    return templated_page('gallery.html', images = ret, title = 'OHRRPGCE Gallery',
+                          titletext = titletext, topnote = topnote)
 
 ################################################################################
 
@@ -418,11 +452,9 @@ def handle_zips(path):
     zips_db = gamedb.DataBaseLayer.load('zips')
     if len(path) == 1:
         # Index
-        print("index", path)
         return render_zips(zips_db)
     else:
         zipkey = tuple(path[1].split(','))
-        print("zipkey", zipkey)
 
         if zipkey not in zips_db:
             return notfound("Invalid zip file ID.")
@@ -506,7 +538,6 @@ def application(environ, start_response):
     path = path.split('/')
     while '' in path:
         path.remove('')
-    print("REQ PATH:", path)
 
     #return render_page(text2html(environ))
 
@@ -517,7 +548,7 @@ def application(environ, start_response):
 
     # Convert the query string "?..." into a dictionary
     # mapping to lists of values
-    parameters = cgi.parse_qs(environ.get('QUERY_STRING', ''))
+    parameters = cgi.parse_qs(environ.get('QUERY_STRING', ''), keep_blank_values = True)
     reqinfo.query = parameters
 
     # Handle dynamic pages

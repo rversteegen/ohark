@@ -27,7 +27,7 @@ import pull_slimesalad
 # Where the static files are on the server
 #STATIC_ROOT = '/home/teeemcee/ohr/ohr_archive/web/'
 STATIC_ROOT = '../web/' #os.path.abspath(os.curdir) + '../web/'
-# <base> tag, relative URLs according to this
+# Part of <base> tag, relative URLs according to this
 URL_ROOTPATH = '/ohr-archive/'  #'/ohr/ark/'
 
 #SRC_DIR = '../src/'
@@ -35,23 +35,33 @@ URL_ROOTPATH = '/ohr-archive/'  #'/ohr/ark/'
 print(os.path.abspath('.'))
 print(__file__)
 
+################################################################################
+# WSGI utility functions, and request handling
+
+def get_website_root():
+    "Reconstruct the address for this website"
+    environ = reqinfo.environ
+    url = environ['wsgi.url_scheme']+'://'
+    if environ.get('HTTP_HOST'):
+        url += environ['HTTP_HOST']
+    else:
+        url += environ['SERVER_NAME']
+        defport = {'http': '80', 'https': '443'}[environ['wsgi.url_scheme']]
+        if environ['SERVER_PORT'] != defport:
+            url += ':' + environ['SERVER_PORT']
+    return url + URL_ROOTPATH
+
 def encode(obj):
     """Convert to correct format for returning to WSGI server"""
     if py2:
         return unicode(obj).encode('utf-8')
     return str(obj).encode('utf-8')
 
-with open(STATIC_ROOT + 'page_template.html', 'r') as temp:
-    if py2:
-        PAGE_TEMPLATE = unicode(temp.read())
-    else:
-        PAGE_TEMPLATE = temp.read()
-
-
 class RequestInfo:
-    def __init__(self, start_response):
+    def __init__(self, environ, start_response):
         "Initialise self and global variables for a new request"
         self.req_timer = util.Timer().start()  # Time the total time spent handling the request
+        self.environ = environ
         self.set_header = start_response
         self.footer_info = ''
         self.DB_timer = util.Timer()  # Time DB loads
@@ -66,7 +76,7 @@ class RequestInfo:
         return ret
 
 
-reqinfo = RequestInfo(None)  # dummy
+reqinfo = RequestInfo(None, None)  # dummy
 
 
 ################################################################################
@@ -367,7 +377,7 @@ def handle_gallery(path):
             newquery['page'] = page
         if random:
             newquery['random'] = ''
-        return reqinfo.path + '?' + urlencode(newquery, doseq = True)
+        return reqinfo.path + '?' + urlimp.urlencode(newquery, doseq = True)
 
     if 'random' in reqinfo.query:
         random.shuffle(screenshots)
@@ -486,6 +496,13 @@ def handle_zips(path):
             return render_zip_contents(zips_db, zipkey, "/".join(path[2:]))
 
 ################################################################################
+## Top-level application code and WSGI interfacing
+
+with open(STATIC_ROOT + 'page_template.html', 'r') as temp:
+    if py2:
+        PAGE_TEMPLATE = unicode(temp.read())
+    else:
+        PAGE_TEMPLATE = temp.read()
 
 def render_page(content, title = 'OHR Archive', topnote = '', status = '200 OK'):
     """
@@ -493,7 +510,7 @@ def render_page(content, title = 'OHR Archive', topnote = '', status = '200 OK')
     """
     reqinfo.set_header(status, [('Content-Type', 'text/html')])
     return [encode(PAGE_TEMPLATE.format(
-        content = content, title = title, root = URL_ROOTPATH,
+        content = content, title = title, root = get_website_root(),
         topnote = topnote, footer_info = reqinfo.get_footer()
     ))]
 
@@ -548,10 +565,10 @@ def static_serve(path, environ, start_response):
 
 def application(environ, start_response):
     """
-    WGSI main entry point for the web app.
+    WSGI main entry point for the web app.
     """
     global reqinfo
-    reqinfo = RequestInfo(start_response)
+    reqinfo = RequestInfo(environ, start_response)
 
     path = environ.get('PATH_INFO', '/')
     if py2:
@@ -563,7 +580,7 @@ def application(environ, start_response):
     while '' in path:
         path.remove('')
 
-    #return render_page(text2html(environ))
+    # return render_page(util.text2html(str(environ)))
 
     # Handle static files and templated static pages
     ret = static_serve(path, environ, start_response)
@@ -585,4 +602,4 @@ def application(environ, start_response):
     elif path[0] == "zips":
         return handle_zips(path)
     else:
-        return notfound(environ.get('PATH_INFO', '/') + " not found")
+        return notfound(reqinfo.path + " not found")

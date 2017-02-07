@@ -21,6 +21,11 @@ body {
 h1 {
     margin: 0.5em 0.5em 0.5em 1em;
 }
+h2 {
+    margin: 0.5em 0.5em 0.5em 1em;
+    font-family: auto;
+
+}
 
 .footer {
     color: #bbb;
@@ -79,9 +84,9 @@ table.game {
     padding: 0 1em 1em 0;
 }
 
-.screenshot img {
+.screenshot img .DISABLED {
     /* This actually looks bad when scaling down an image... could use a fancy
-       rule to select only small images /*
+       rule to select only small images */
     image-rendering: pixelated; /* Chrome */
     image-rendering: -moz-crisp-edges;         /* Firefox */
     image-rendering:   -o-crisp-edges;         /* Opera */
@@ -92,8 +97,9 @@ table.game {
 
 .screenshot img {
     /*width: 200%;*/
-    min-width: 640px;
-    max-width: 640px;
+    /*min-width: 640px;
+    max-width: 640px;*/
+    max-width: 520px;
 }
 
 .caption {

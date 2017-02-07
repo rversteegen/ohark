@@ -225,21 +225,22 @@ def render_games_table(keyed_games, list_title, is_gamelist, filterinfo, numtota
     is_gamelist:  True if this is one of the imported game lists, not a list of .rpgs.
     filterinfo:   Extra info shown at the top.
     """
+    zips_db = gamedb.DataBaseLayer.load('zips')
     # Generate a table as a list-of-lists, so it can be sorted
     if is_gamelist:
-        headers = 'key', 'Name', 'Author', 'Link', 'Description'
+        headers = 'Name', 'Author', 'Link', 'Download?', 'Description'
     else:
-        headers = 'File', 'Name', 'Description'
+        headers = 'Name', 'Description'
     table = []
     for dbname, gameid, game in keyed_games:
         row = []
         row.append( game.name.lower().strip() )  # sort key
-        row.append( gameid )
         row.append( util.link('gamelists/%s/%s/' % (dbname, gameid), game.get_name()) )
         if is_gamelist:
             #util.link(game.author_link, game.get_author())
             row.append( game.get_author() )
             row.append( game.url and util.link(game.url, u"➔") )
+            row.append( get_game_download_summary(game, zips_db) )
         row.append( util.shorten(util.strip_html(game.description), 150) )
         table.append(row)
     table.sort()
@@ -289,6 +290,8 @@ def get_game_downloads_info(game):
     """
     Generates the contents of the Downloads section of a game listing.
     """
+    zips_db = gamedb.DataBaseLayer.load('zips')
+    rpgs_db = gamedb.DataBaseLayer.load('rpgs')
     download_lines = []
     for downloadlink in game.downloads:
         zipdata = downloadlink.load_zipdata()
@@ -307,8 +310,37 @@ def get_game_downloads_info(game):
             entry += " (" + size + ")"
         if downloadlink.description:
             entry += " - " + downloadlink.description
-        download_lines.append(entry)
-    return '<br/>'.join(download_lines)
+
+        # Preview the .rpgs/.rpgdirs contained in the download
+        key = downloadlink.zipkey()
+        contents_lines = []
+        if key in zips_db:
+            zip = zips_db[key]
+            if zip.unreadable:
+                contents_lines.append('Unreadable')
+            else:
+                for fname, gamehash in zips_db[key].rpgs.items():
+                    rpg = rpgs_db[gamehash]
+                    contents_lines.append("%s -- %s -- %s" % (util.link('gamelists/rpgs/' + gamehash, fname), rpg.name, rpg.description))
+        else:
+            contents_lines.append('Skipped')
+        entry += '<ul>%s</ul>' % '\n'.join('<li>%s</li>' % line for line in contents_lines)
+
+        download_lines.append('<li>%s</li>' % entry)
+    return '<ul>%s</ul>' % '\n'.join(download_lines)
+
+def get_game_download_summary(game, zips_db):
+    """Tell whether a game has a download available"""
+    if not game.downloads:
+        return "No"
+    for download in game.downloads:
+        key = download.zipkey()
+        if key in zips_db:
+            if hasattr(zips_db[key], 'rpgs') and zips_db[key].rpgs:
+                # Has at least one rpg/rpgdir, even if it's corrupt or unextractable
+                return "Yes"
+    # There are download links but we don't recognise them
+    return "?"
 
 def render_game(listname, gameid, game):
     """
@@ -324,7 +356,7 @@ def render_game(listname, gameid, game):
 
     ret += add_row("Author", util.link(game.author_link, game.get_author()))
     if game.url:
-        ret += add_row("Original entry", util.link(game.url, gameid) + " on " + gamedb.SOURCES[listname]['name'])
+        ret += add_row("Original entry", util.link(game.url, "On " + gamedb.SOURCES[listname]['name']))
     # else:
     #     ret += add_row("Origin/ID", gameid)
     if game.archives:

@@ -47,7 +47,7 @@ def process_game_page(url):
     download_link = dom.find('a', string=re.compile('Download: '))
     if download_link:
         # The text for the download link is e.g. "Download: 3.87 MB"
-        download = gamedb.DownloadLink('cp', '', srcid + '.zip', urljoin(url, download_link['href']))
+        download = gamedb.DownloadLink('cp', srcid + '.zip', urljoin(url, download_link['href']))
         download.sizestr = tostr(download_link.string[10:])
         game.downloads.append(download)
 

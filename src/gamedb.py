@@ -167,43 +167,39 @@ class DownloadLink:
     """
     Info about a download link on a game entry. May point to an element of the 'zips' DB.
     """
-    def __init__(self, listname, srcid, fname, external, title = ""):
+    def __init__(self, listname, zipname, external, title = ""):
         self.listname = listname # The ID of the gamelist, eg 'ss'
-        self.fname = fname       # The actual zip filename
-        self.srcid = srcid       # The srcid of the game. Optional and not currently used.
+        self.zipname = zipname   # The identifier of the zip, equal to util.escape_id(actual_filename)
         self.external = external # Official download link (may increase download counter!)
-        self.title = title       # Only used on some sites, like SS (where it's the original zip fname)
+        self.title = title       # The displayed filename or title of the download. Optional.
         self.description = ""
         self.download_count = None # Number of downloads; usually useless
         self.sizestr = ""        # Size of the download as a string. The ScannedZipData has the real size
 
-    def zipkey(self):
-        "The key used to find this file in the 'zips' DB"
-        return (self.listname, self.srcid, self.fname)
+    def name(self):
+        return self.title or self.zipname
 
-    def zipkeystr(self):
-        "The ID for this zip used in URLs"
-        # FIXME: it's confusing to have two different formats for the key
-        # as either a tuple or a string
-        return ','.join(self.zipkey())
+    def zipkey(self):
+        "The key used for this file (URL component and key in the 'zips' DB)"
+        return self.listname + ":" + self.zipname
 
     def load_zipdata(self):
         "Returns the corresponding ScannedZipData object from DB, or None"
-        if self.fname:
+        if self.zipname:
             zips_db = DataBaseLayer.load('zips')
             return zips_db.get(self.zipkey())
 
     def internal(self):
-        if self.fname:
-            return 'zips/' + self.zipkeystr()
+        if self.zipname:
+            return 'zips/' + self.zipkey()
 
     # def internal_link(self):
     #     "Generate a link to our page for this download, or None"
-    #     if self.fname:
-    #         return util.link(self.internal(), self.title or self.fname)
+    #     if self.zipname:
+    #         return util.link(self.internal(), self.name())
 
     def __repr__(self):
-        return 'Download<%s %s>' % (self.zipkeystr(), self.title)
+        return 'Download<%s %s>' % (self.zipkey(), self.title)
 
 
 class Game:
@@ -289,7 +285,7 @@ class GameList:
         Save to file.
         """
         DataBaseLayer.save(self.name, self.games)
-
+        
 class ScannedZipData:
     """
     This class holds information about a zip file.
@@ -331,6 +327,10 @@ class ScannedZipData:
                         # Filter out large files such as LICENSE-binary.txt
                         if size < 15000 and '_debug' not in fname:
                             self.files[fname] = scrape.auto_decode(zipinfo.zip.read(fname))
+
+    def name(self):
+        "For consistency with DownloadLink"
+        return self.filename
 
 class _GameIndex():
     """Dead code"""

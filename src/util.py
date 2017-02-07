@@ -136,7 +136,7 @@ def unescape_filename(fname, encoding = 'latin-1'):
     And a couple games have leading/trailing whitespace too.
     (To get the zipname for a ScannedZipData, pass the result through escape_id().)
     """
-    return util.fix_escapes(urlimp.unquote(fname).decode(encoding)).strip()
+    return fix_escapes(urlimp.unquote(fname).decode(encoding)).strip()
 
 def escape_id(ident):
     """Escape characters in an identifier (e.g. game srcid) that would prevent it from

@@ -12,12 +12,13 @@ import sys
 import time
 import random
 import numpy as np
+
 import localsite
 import nohrio.ohrrpgce
 from rpgbatch import RPGIterator, RPGInfo, ArchiveInfo
+import util
 import scrape
 from gamedb import BinData
-
 import gamedb
 
 def process_sources(db_name, sources):
@@ -35,15 +36,13 @@ def process_sources(db_name, sources):
             # A zip file
             zipinfo = yielded
             # The zip files on CP, SS, Op:OHR (by coincidence), Bahamut all have unique names.
-            # Others may not. So in these cases srcid can simply be left blank for convenience.
-            srcid = ""
+            # Others may not. We assume there are no files with duplicate names from the same src.
             fname = os.path.split(zipinfo.path)[-1]
-            zip_fname = util.unescape_filename(fname)
-            zipkey = (zipinfo.src, srcid, util.escape_id(zipname))
+            fname = util.unescape_filename(fname)
+            zipkey = zipinfo.src + ":" + util.escape_id(fname)
             print("Processing ZIP", zipkey)
-            assert zipkey not in zips_db   # Shouldn't happen!
-
-            zipdata = gamedb.ScannedZipData(zipinfo, zipname)
+            assert zipkey not in zips_db
+            zipdata = gamedb.ScannedZipData(zipinfo, fname)
             zips_db[zipkey] = zipdata
             if zipdata.unreadable:
                 continue   # We didn't read any games from this zip

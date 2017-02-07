@@ -99,7 +99,7 @@ def process_game_page(url, gameinfo = None):
             zip_fname = gamefile.url.split('/')[-1]
         else:
             zip_fname = title
-        download = gamedb.DownloadLink('ss', '', zip_fname, download_url, title)
+        download = gamedb.DownloadLink('ss', zip_fname, download_url, title)
         download.count = int(info[-2])
         download.sizestr = info[0][1:] + ' ' + info[1][:-1]
         download.description = descrip_tag.string and tostr(descrip_tag.string)

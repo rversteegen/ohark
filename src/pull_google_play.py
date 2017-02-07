@@ -23,8 +23,8 @@ def process_game_page(name, url):
     game = gamedb.Game()
     game.name = tostr(dom.find('div', class_='id-app-title').string)
     game.url = url
-    # The download link is fake; has no info
-    game.downloads = [gamedb.DownloadLink('googleplay', '', srcid, url, "For Android")]
+    # The download link is fake; has no info. (So leave srcid to indicate.)
+    game.downloads = [gamedb.DownloadLink('googleplay', '', url, "For Android")]
     print ("Processing game:", game.name, "  \tsrcid:", srcid)
 
     author_div = dom.find('div', itemprop='author')

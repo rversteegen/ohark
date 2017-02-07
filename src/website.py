@@ -270,11 +270,14 @@ def get_game_archives_info(game):
     Generates the "Appears in" info for a game entry for an .rpg file, listing the .zips
     or other locations where it appears.
     """
+    zips_db = gamedb.DataBaseLayer.load('zips')
     archive_links = []
     for zipkey in game.archives:
-        zipkeystr = ",".join(zipkey)
-        srcname, gameid, zip_fname = zipkey
-        link = util.link("zips/" + zipkeystr, zip_fname)
+        srcname, zipname = zipkey.split(':', 1)
+        if zipkey in zips_db:
+            link = util.link("zips/" + zipkey, zips_db[zipkey].name())
+        else:
+            link = zipname
         if srcname in gamedb.SOURCES:
             link += " on " + gamedb.SOURCES[srcname]['name']
         else:
@@ -288,8 +291,8 @@ def get_game_downloads_info(game):
     """
     download_lines = []
     for downloadlink in game.downloads:
-        entry = downloadlink.title or downloadlink.fname
         zipdata = downloadlink.load_zipdata()
+        entry = downloadlink.name()
         if zipdata:
             entry += " - " + util.link(downloadlink.internal(), "[info]")
         else:
@@ -404,37 +407,30 @@ def handle_gallery(path):
 
 def render_zip_contents(zips_db, zipkey, fname):
     """
-    Handles zips/<zipkeystr>/<fname> URLs.
+    Handles zips/<zipkey>/<fname> URLs.
     Display the contents of a file in a zip file that was saved when the file was scanned
     (small text files)
     """
     zipdata = zips_db[zipkey]
-    zipkeystr = ",".join(zipkey)
 
-    topnote = util.link("/zips/" + zipkeystr, "Back to %s..." % zipkey[2]) + "\n"
+    topnote = util.link("/zips/" + zipkey, "Back to %s..." % zipdata.name()) + "\n"
     if fname not in zipdata.files:
         return notfound("That file is not available here; download the .zip yourself to view it.")
-    ret = '<h1>%s/%s</h1>\n' % ("/".join(zipkey), fname)
+    ret = '<h1>%s/%s</h1>\n' % (zipdata.name(), fname)
     ret += '<div class="textfile">%s</div>' % util.text2html(zipdata.files[fname])
     return render_page(ret, title = fname, topnote = topnote)
 
 def render_zip(zips_db, zipkey):
     """
-    Handles zips/<zipkeystr> URLs.
+    Handles zips/<zipkey> URLs.
     Generate a page showing the contents of a zip file.
-    zipkey is a triple (listname, srcid, zipname) which identify
-    the source gamelist/website (e.g. 'ss'), the source-specific game id
-    (e.g. 12), and the specific zip file found in that entry
-    (e.g. 'Darkmoor Dungeon.zip').
+    zipkey is of the form "listname:zipname" which identify the source
+    gamelist/website (e.g. 'ss') and the specific zip file, e.g. 189.zip.
     """
     zipdata = zips_db[zipkey]
-    zipkeystr = ",".join(zipkey)
 
     topnote = util.link("/zips", "Back to index ...") + "\n"
-    dbname, srcid, fname = zipkey
-    title = "/".join(zipkey)
     note = note2 = table_html = ""
-    #title = '%s/%s/%s' % (dbname, srcid or '?', fname)
 
     if zipdata.unreadable:
         note = "This zip file is corrupt or could not be read (e.g. uses unusual compression)."
@@ -444,7 +440,7 @@ def render_zip(zips_db, zipkey):
             name = fname
             if fname in zipdata.files:
                 # We copied the contents of this file, provide a link to it
-                name = util.link("zips/%s/%s" % (zipkeystr, fname), name)
+                name = util.link("zips/%s/%s" % (zipkey, fname), name)
             if fname in zipdata.rpgs:
                 if zipdata.rpgs[fname] is None:
                     # This game couldn't even be hashed, there was an error while extracting files
@@ -459,9 +455,9 @@ def render_zip(zips_db, zipkey):
     if zipdata.error:
         note2 = "An error occurred while reading this .zip: " + zipdata.error
 
-    format_strs = {'zipname': title, 'table': table_html, 'size': zipdata.size,
+    format_strs = {'heading': zipdata.name(), 'table': table_html, 'size': zipdata.size,
                    'mtime': time.ctime(zipdata.mtime), 'note': note, 'note2': note2}
-    return templated_page('zipinfo.html', topnote = topnote, title = 'OHR Archive - ' + title, **format_strs)
+    return templated_page('zipinfo.html', topnote = topnote, title = 'OHR Archive - ' + zipdata.name(), **format_strs)
 
 def render_zips(zips_db):
     """
@@ -469,12 +465,10 @@ def render_zips(zips_db):
     """
     # Just show a simple table
     ret = "<ul>"
-    for zipkey in zips_db:
-        linkname = ",".join(zipkey)
-        ret += "<li>%s</li>\n" % util.link("zips/" + linkname, linkname)
+    for zipkey in sorted(zips_db.keys()):
+        ret += "<li>%s</li>\n" % util.link("zips/" + zipkey, zipkey)
     ret += "</ul>"
     return render_page(ret, topnote = util.link("/", "Back to root ..."))
-
 
 def handle_zips(path):
     """
@@ -485,10 +479,9 @@ def handle_zips(path):
         # Index
         return render_zips(zips_db)
     else:
-        zipkey = tuple(path[1].split(',', 2))  # Allow , in the filename
-
+        zipkey = path[1]
         if zipkey not in zips_db:
-            return notfound("Invalid zip file ID.")
+            return notfound("Zip file %s not found." % zipkey)
 
         if len(path) == 2:
             return render_zip(zips_db, zipkey)

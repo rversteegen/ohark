@@ -50,6 +50,11 @@ def process_game(dirname, path):
         # which causes Op:OHR to screw up. The files are identical to the Wally's Castle entry anyway.
         print("!! Skipping " + dirname)
         return
+    if dirname in ('Joe%27s%20Great%20Adventure%3A%20The%20Goblet%20of%20Life', 'Last%20Resort%20'):
+        # These are duplicate near-blank entries, and have the same name, but with different
+        # escaping, and cause collisions if not omitted
+        print("!! skipping " + dirname)
+        return
 
     files = os.listdir(path)
     if len(files) == 0:
@@ -57,8 +62,8 @@ def process_game(dirname, path):
         return
 
     game = gamedb.Game()
-    gamename = util.unescape_filename(dirname)
-    srcid = util.escape_id(gamename)
+    game.name = util.unescape_filename(dirname)
+    srcid = util.id_from_filename(dirname)
 
     # See what files we've got, whether there are any unexpected ones
     by_extn = defaultdict(list)
@@ -70,10 +75,10 @@ def process_game(dirname, path):
         if fname.lower() != dirname.lower() + extn:
             if extn in image_extns:  # We make use of extra screenshots, so don't report
                 game.extra_info += "(Note: the page for this game on Op:OHR has a missing screenshot.)\n"
-                print(" Note: found game with extra screenshot, %s/%s" % (gamename, fname))
+                print(" Note: found game with extra screenshot, %s/%s" % (game.name, fname))
                 stats['extrascreenshots'] += 1
             else:
-                print(" %s: Extra File %s" % (gamename, fname))
+                print(" %s: Extra File %s" % (game.name, fname))
             if extn in unique_extns:
                 continue
         elif fname != dirname + extn:
@@ -102,11 +107,11 @@ def process_game(dirname, path):
 
     game.author = util.fix_escapes(getdata('.aut'))
     if not game.author:
-        print(" %s: Invalid author '%s'" % (gamename, game.author))
+        print(" %s: Invalid author '%s'" % (game.name, game.author))
     if getdata('.eml') not in ("none", "None", ""):
         game.author_link = "mailto:" + getdata('.eml')
         if '@' not in game.author_link:
-            print(" %s: Invalid email '%s'" % (gamename, game.author_link))
+            print(" %s: Invalid email '%s'" % (game.name, game.author_link))
     game.description = util.text2html(util.fix_escapes(getdata('.dsc')))
     website = getdata('.url')
     if website:
@@ -120,9 +125,9 @@ def process_game(dirname, path):
         zip_fname = util.unescape_filename(by_extn['.zip'][0])
         # Note that dirname and filename are quoted twice in download_url
         download_url = OPOHR_URL + urlimp.quote('gamelist/%s/%s' % (dirname, by_extn['.zip'][0]))
-        game.downloads = [gamedb.DownloadLink('opohr', util.escape_id(zip_fname), download_url, zip_fname)]
+        game.downloads = [gamedb.DownloadLink('opohr', util.id_from_filename(zip_fname), download_url, zip_fname)]
         if status == "No demo":
-            print(" %s: Status '%s' but game has a download" % (gamename, status))
+            print(" %s: Status '%s' but game has a download" % (game.name, status))
             game.extra_info += "(Note: the page for this game on Op:OHR is missing the download link.)\n"
             stats['extradownloads'] += 1
             status = None
@@ -142,10 +147,11 @@ def process_game(dirname, path):
 
     game = scrape.clean_strings(game)
 
+    assert srcid not in db.games
     db.games[srcid] = game
 
 def process_index(path):
-    for dirname in os.listdir(path):
+    for dirname in sorted(os.listdir(path)):
         process_game(dirname, os.path.join(path, dirname))
 
 

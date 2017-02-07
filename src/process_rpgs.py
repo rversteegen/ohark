@@ -38,8 +38,7 @@ def process_sources(db_name, sources):
             # The zip files on CP, SS, Op:OHR (by coincidence), Bahamut all have unique names.
             # Others may not. We assume there are no files with duplicate names from the same src.
             fname = os.path.split(zipinfo.path)[-1]
-            fname = util.unescape_filename(fname)
-            zipkey = zipinfo.src + ":" + util.escape_id(fname)
+            zipkey = zipinfo.src + ":" + util.id_from_filename(fname)
             print("Processing ZIP", zipkey)
             assert zipkey not in zips_db
             zipdata = gamedb.ScannedZipData(zipinfo, fname)

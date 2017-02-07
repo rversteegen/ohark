@@ -3,6 +3,7 @@ import os
 import re
 import time
 import ctypes
+import hashlib
 import cgi
 
 import urlimp
@@ -106,6 +107,11 @@ def format_filesize(size):
         return "%s KB" % form(size / 1024.)
     return "%d B" % size
 
+def md5hash(string):
+    md5 = hashlib.md5()
+    md5.update(string.encode('utf-8'))
+    return md5.hexdigest()
+
 def strip_strings(strings):
     """Given a list of strings, strip them""" # and remove whitespace-only strings"""
     return [x.strip() for x in strings]
@@ -141,7 +147,6 @@ def unescape_filename(fname, encoding = 'latin-1'):
     to produce the original filename: the filenames of .zips from Op:OHR contain URL
     %xx escape codes, need to remove. Also, Op:OHR has ' in game/filenames double escaped to \\\' !
     And a couple games have leading/trailing whitespace too.
-    (To get the zipname for a ScannedZipData, pass the result through escape_id().)
     """
     if py2:
         if isinstance(fname, tostr):
@@ -160,6 +165,15 @@ def escape_id(ident):
         ident = ident.replace(char, '(%x)' % ord(char))
     # Replace space because Chrome and IE show it as %20 in the URL
     return ident.replace(' ', '_')
+
+def id_from_filename(fname):
+    """Returns a unique ID for a game or zip file that can be part of a URL, given its name."""
+    id = escape_id(unescape_filename(fname))
+    if '%' in fname:
+        # Prepend hash to ensure uniqueness; otherwise '%20' and ' ' give same result
+        #id = md5hash(fname)[:2] + "!" + id
+        id = "!" + id   # Good enough in practice
+    return id
 
 def partial_quote(url):
     """

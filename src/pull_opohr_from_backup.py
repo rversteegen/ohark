@@ -94,21 +94,20 @@ def process_game(dirname, path):
     def getdata(extn):
         assert len(by_extn[extn]) == 1
         fname = by_extn[extn][0]
-        with open(os.path.join(path, fname)) as f:
-            return f.read()
+        return util.read_text_file(os.path.join(path, fname), encoding)
 
     # Note that we quote it once, and the browser will quote it a second time, as required.
     # Note: there's a game that doesn't show up on the gamelist, '?', but does have a page
     game.url = OPOHR_URL + 'gamelist-display.php?username=' + urlimp.quote(dirname)
 
-    game.author = util.fix_escapes(getdata('.aut').decode(encoding))
+    game.author = util.fix_escapes(getdata('.aut'))
     if not game.author:
         print(" %s: Invalid author '%s'" % (gamename, game.author))
     if getdata('.eml') not in ("none", "None", ""):
         game.author_link = "mailto:" + getdata('.eml')
         if '@' not in game.author_link:
             print(" %s: Invalid email '%s'" % (gamename, game.author_link))
-    game.description = util.text2html(util.fix_escapes(getdata('.dsc').decode(encoding)))
+    game.description = util.text2html(util.fix_escapes(getdata('.dsc')))
     website = getdata('.url')
     if website:
         if len(website) > 7:

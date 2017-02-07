@@ -564,8 +564,11 @@ def application(environ, start_response):
     reqinfo = RequestInfo(environ, start_response)
 
     path = environ.get('PATH_INFO', '/')
-    if py2:
-        path = path.decode('utf-8')
+    # For some reason for me for Python 3 wsgiref.simple_server, PATH_INFO
+    # is a str but hasn't been decoded as utf-8
+    if not py2:
+        path = path.encode('latin-1')
+    path = path.decode('utf-8')
     reqinfo.path = path
     if path.startswith(URL_ROOTPATH):
         path = path[len(URL_ROOTPATH):]

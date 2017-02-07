@@ -110,6 +110,13 @@ def strip_strings(strings):
     """Given a list of strings, strip them""" # and remove whitespace-only strings"""
     return [x.strip() for x in strings]
 
+def read_text_file(path, encoding = 'utf-8'):
+    "Read the contents of a file, returning unicode string. Python 2/3 wrapper."
+    encarg = {} if py2 else {'encoding': encoding}
+    with open(path, "r", **encarg) as f:
+        if py2:
+            return f.read().decode(encoding)
+        return f.read()
 
 def program_output(*args, **kwargs):
     """Runs a program and returns stdout as a string"""
@@ -136,7 +143,14 @@ def unescape_filename(fname, encoding = 'latin-1'):
     And a couple games have leading/trailing whitespace too.
     (To get the zipname for a ScannedZipData, pass the result through escape_id().)
     """
-    return fix_escapes(urlimp.unquote(fname).decode(encoding)).strip()
+    if py2:
+        if isinstance(fname, tostr):
+            fname = fname.encode(encoding)  # Re-encode it, because we have to decode it after unquoting
+        fname = urlimp.unquote(fname)
+        fname = fname.decode(encoding)
+    else:
+        fname = urlimp.unquote(fname, encoding = encoding)
+    return fix_escapes(fname).strip()
 
 def escape_id(ident):
     """Escape characters in an identifier (e.g. game srcid) that would prevent it from

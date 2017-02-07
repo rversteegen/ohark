@@ -5,6 +5,8 @@ import time
 import ctypes
 import cgi
 
+import urlimp
+
 ################################################################################
 ### Util
 
@@ -122,15 +124,28 @@ def shell_output(*args, **kwargs):
     """Runs a program on the shell and returns stdout as a string"""
     return program_output(*args, shell=True, **kwargs)
 
-def partial_escape(url):
+def fix_escapes(text):
+    """Decoded instances of  \\ \' and \" escapes in a string, and also double encoding like \\\\'
+    (there are a couple games on Op:OHR which do this!)"""
+    return text.replace(r'\\', '\\').replace(r'\\', '\\').replace(r"\'", "'").replace(r'\"', '"')
+
+def unescape_filename(fname, encoding = 'latin-1'):
+    """Given a file name of a zip file, fix all the escape codes that might be present
+    to produce the original filename: the filenames of .zips from Op:OHR contain URL
+    %xx escape codes, need to remove. Also, Op:OHR has ' in game/filenames double escaped to \\\' !
+    And a couple games have leading/trailing whitespace too.
+    (To get the zipname for a ScannedZipData, pass the result through escape_id().)
     """
-    Quote characters in urls that browsers can't do automatically, because they have special meaning.
-    This can be used for forming srcids.
-    """
-    chars = "#?\\"
+    return util.fix_escapes(urlimp.unquote(fname).decode(encoding)).strip()
+
+def escape_id(ident):
+    """Escape characters in an identifier (e.g. game srcid) that would prevent it from
+    being used as part of the path of a URL."""
+    chars = "?#%/"
     for char in chars:
-        url = url.replace(char, '%%%x' % ord(char))
-    return url
+        ident = ident.replace(char, '(%x)' % ord(char))
+    # Replace space because Chrome and IE show it as %20 in the URL
+    return ident.replace(' ', '_')
 
 _tag_regexp = re.compile('<[^>]*>')
 

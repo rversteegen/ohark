@@ -34,11 +34,6 @@ image_extns = '.gif', '.jpg'
 
 stats = {'extradownloads': 0, 'extragames': 0, 'extrascreenshots': 0}
 
-def fix_escapes(text):
-    """Fix instances of \\\\, \\, \' and \" escapes in a string
-    (There are a couple games which have \ double escaped for some reason!!)"""
-    return text.replace(r'\\', '\\').replace(r'\\', '\\').replace(r"\'", "'").replace(r'\"', '"')
-
 def process_game(dirname, path):
     # Note: Since we're not reading the files over the web, dirname has one
     # less layer of escaping than the URLs
@@ -62,9 +57,8 @@ def process_game(dirname, path):
         return
 
     game = gamedb.Game()
-    gamename = fix_escapes(urlimp.unquote(dirname.decode(encoding)))
-    srcid = util.partial_escape(gamename)
-    game.name = gamename.strip()   # One game has trailing whitespace
+    gamename = util.unescape_filename(dirname)
+    srcid = util.escape_id(gamename)
 
     # See what files we've got, whether there are any unexpected ones
     by_extn = defaultdict(list)
@@ -107,14 +101,14 @@ def process_game(dirname, path):
     # Note: there's a game that doesn't show up on the gamelist, '?', but does have a page
     game.url = OPOHR_URL + 'gamelist-display.php?username=' + urlimp.quote(dirname)
 
-    game.author = fix_escapes(getdata('.aut').decode(encoding))
+    game.author = util.fix_escapes(getdata('.aut').decode(encoding))
     if not game.author:
         print(" %s: Invalid author '%s'" % (gamename, game.author))
     if getdata('.eml') not in ("none", "None", ""):
         game.author_link = "mailto:" + getdata('.eml')
         if '@' not in game.author_link:
             print(" %s: Invalid email '%s'" % (gamename, game.author_link))
-    game.description = util.text2html(fix_escapes(getdata('.dsc').decode(encoding)))
+    game.description = util.text2html(util.fix_escapes(getdata('.dsc').decode(encoding)))
     website = getdata('.url')
     if website:
         if len(website) > 7:
@@ -124,10 +118,10 @@ def process_game(dirname, path):
     status = getdata('.sta')
     if '.zip' in by_extn:
         assert len(by_extn['.zip']) == 1
-        zipfile = urlimp.unquote(by_extn['.zip'][0])
+        zip_fname = util.unescape_filename(by_extn['.zip'][0])
         # Note that dirname and filename are quoted twice in download_url
         download_url = OPOHR_URL + urlimp.quote('gamelist/%s/%s' % (dirname, by_extn['.zip'][0]))
-        game.downloads = [gamedb.DownloadLink('opohr', '', zipfile, download_url)]
+        game.downloads = [gamedb.DownloadLink('opohr', '', util.escape_id(zip_fname), download_url, zip_fname)]
         if status == "No demo":
             print(" %s: Status '%s' but game has a download" % (gamename, status))
             game.extra_info += "(Note: the page for this game on Op:OHR is missing the download link.)\n"

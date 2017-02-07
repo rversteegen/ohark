@@ -37,16 +37,13 @@ def process_sources(db_name, sources):
             # The zip files on CP, SS, Op:OHR (by coincidence), Bahamut all have unique names.
             # Others may not. So in these cases srcid can simply be left blank for convenience.
             srcid = ""
-            zip_fname = os.path.split(zipinfo.path)[1]
-            # The filenames of .zips from Op:OHR contain URL %xx escape codes, need to remove
-            # to get a string that can be part of a valid URL.
-            zip_fname = urlimp.unquote(zip_fname).decode('latin-1')
-
-            zipkey = (zipinfo.src, srcid, zip_fname)
+            fname = os.path.split(zipinfo.path)[-1]
+            zip_fname = util.unescape_filename(fname)
+            zipkey = (zipinfo.src, srcid, util.escape_id(zipname))
             print("Processing ZIP", zipkey)
             assert zipkey not in zips_db   # Shouldn't happen!
 
-            zipdata = gamedb.ScannedZipData(zipinfo)
+            zipdata = gamedb.ScannedZipData(zipinfo, zipname)
             zips_db[zipkey] = zipdata
             if zipdata.unreadable:
                 continue   # We didn't read any games from this zip

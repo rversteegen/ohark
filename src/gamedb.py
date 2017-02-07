@@ -290,19 +290,19 @@ class GameList:
         """
         DataBaseLayer.save(self.name, self.games)
 
-
 class ScannedZipData:
     """
     This class holds information about a zip file.
     It's a picklable repackaging of some of the information in rpgbatch.ArchiveInfo
     """
 
-    def __init__(self, zipinfo):
+    def __init__(self, zipinfo, filename):
         """zipinfo is an ArchiveInfo object"""
         self.error = zipinfo.error   # Any error message produced while trying to read, else ""
         if self.error:
             print("!! zipinfo error:", self.error)
         self.unreadable = zipinfo.zip is None   # File is completely unreadable
+        self.filename = filename
         self.size = zipinfo.size    # Always valid
         self.mtime = zipinfo.mtime  # Always valid
         # Proceed to read the list of files, even if zipinfo.error
@@ -331,7 +331,6 @@ class ScannedZipData:
                         # Filter out large files such as LICENSE-binary.txt
                         if size < 15000 and '_debug' not in fname:
                             self.files[fname] = scrape.auto_decode(zipinfo.zip.read(fname))
-
 
 class _GameIndex():
     """Dead code"""

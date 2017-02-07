@@ -147,6 +147,28 @@ def escape_id(ident):
     # Replace space because Chrome and IE show it as %20 in the URL
     return ident.replace(' ', '_')
 
+def partial_quote(url):
+    """
+    Replacement for urllib.quote(). Quote characters in the path of a URL that
+    are reserved, but don't quote ? # % under the assumption that we cleaned them earlier.
+    """
+    # Various ASCII characters need encoding (notably / ? #).
+    # ! $ & ' ( ) * + , ; = : @ may appear unescaped in the path, query, and fragment.
+    # But most of these are reserved in other parts of an URI, so quote() defaults
+    # to escaping them (override that). (It also quotes ! ( ) for some reason.)
+    # If you don't quote all necessary characters in the URL, most (all?) browsers will
+    # accept it although it's technically invalid, and will auto-encode
+    # them when making a request (but at least Firefox and Chrome show the original
+    # characters in the URL bar)
+    # Browsers will also decode some escape codes when displaying the URL.
+    # Chrome decodes only -._~ and alphanumerics from escape codes (notably not spaces).
+    # Firefox decodes space and !"'()*-.<>[\]^_`{|}~ and alphanumerics.
+
+    # Also, the correct way to put unicode in a URI (called a IRI) is to
+    # encode as utf-8 and then percent-code the octets; browsers accept without, but
+    # quote() will throw an error
+    return urlimp.quote(url.encode('utf-8'), "/;:@&=+$,!()?#%")
+
 _tag_regexp = re.compile('<[^>]*>')
 
 def strip_html(text):
@@ -168,9 +190,12 @@ assert remove_sid('gamelist-display.php?game=206&sid=d12a342f6ae0d') == 'gamelis
 assert remove_sid('gamelist-display.php?game=206') == 'gamelist-display.php?game=206'
 
 def link(href, text):
-    if len(href):
-        return '<a href="' + href + '">' + text + '</a>'
-    return text
+    """
+    Create a link, properly encoding the href (except for special characters # and ?).
+    """
+    if not href:
+        return text
+    return '<a href="' + partial_quote(href) + '">' + text + '</a>'
 
 def text2html(obj):
     """Format raw text to html"""

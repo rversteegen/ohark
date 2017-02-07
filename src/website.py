@@ -370,7 +370,8 @@ def render_game(listname, gameid, game):
         ret += add_row("Screenshots", shots)
     if game.error:
         ret += add_row("Error messages", game.error)
-    ret += add_row("Downloads", get_game_downloads_info(game))
+    if game.downloads:
+        ret += add_row("Downloads", get_game_downloads_info(game))
     ret += add_row("Reviews", game.reviews)
     info = game.extra_info
     if game.gen:

@@ -122,10 +122,11 @@ def process_game(dirname, path):
     status = getdata('.sta')
     if '.zip' in by_extn:
         assert len(by_extn['.zip']) == 1
-        zip_fname = util.unescape_filename(by_extn['.zip'][0])
+        fname = by_extn['.zip'][0]
+        zip_fname = util.unescape_filename(fname)
         # Note that dirname and filename are quoted twice in download_url
         download_url = OPOHR_URL + urlimp.quote('gamelist/%s/%s' % (dirname, by_extn['.zip'][0]))
-        game.downloads = [gamedb.DownloadLink('opohr', util.id_from_filename(zip_fname), download_url, zip_fname)]
+        game.downloads = [gamedb.DownloadLink('opohr', util.id_from_filename(fname), download_url, zip_fname)]
         if status == "No demo":
             print(" %s: Status '%s' but game has a download" % (game.name, status))
             game.extra_info += "(Note: the page for this game on Op:OHR is missing the download link.)\n"

@@ -10,6 +10,7 @@ import cgi
 import sys
 import time
 import random
+from collections import defaultdict
 
 import localsite
 #import tabulate
@@ -136,7 +137,7 @@ def render_gamelists():
     Generate the gamelists/ page
     """
     topnote = util.link("/", "Back to root ...") + "\n"
-    ret = "<h1>Archived Gamelists</h1>\n"
+    ret = "<h1>Mirrored Gamelists</h1>\n"
     ret += "<p>The following gamelists have been imported:</p>\n<ul>"
     for src, info in sorted(gamedb.SOURCES.items()):
         if info.get('hidden', False):
@@ -362,7 +363,7 @@ def render_game(listname, gameid, game):
     ret += add_row("Description", game.description)
     if game.archives:
         ret += add_row("Appears in", get_game_archives_info(game))
-    ret += add_row("Tags", game.tags and ", ".join(game.tags))
+    ret += add_row("Tags", ", ".join(util.link("games?tag=" + tag, tag) for tag in game.tags))
     if game.screenshots:
         shots = '\n'.join(screenshot_box(shot) for shot in game.screenshots)
         ret += add_row("Screenshots", shots)
@@ -379,6 +380,39 @@ def render_game(listname, gameid, game):
 
     ret += "</tbody></table>\n"
     return render_page(ret, topnote = topnote, title = 'OHR Archive - ' + game.name)
+
+################################################################################
+
+def render_tags(path):
+    """
+    Handles tags/ URL. Show list of all tags.
+    """
+    sorttype = reqinfo.query.get('sort', ['name'])[0]
+    display = reqinfo.query.get('display', ['cloud'])[0]
+    threshold = int(reqinfo.query.get('threshold', [1])[0])
+
+    tags = defaultdict(int)
+    for listname, listinfo in gamedb.SOURCES.items():
+        if listinfo.get('hidden', False):
+            continue
+        db = gamedb.GameList.load(listname)
+        for game in db.games.values():
+            for tag in game.tags:
+                tags[tag] += 1
+
+    tags = [(name, count) for name, count in tags.items() if count >= threshold]
+    if sorttype == "count":
+        tags.sort(key = lambda x : -x[1])
+    else:  # "name"
+        tags.sort(key = lambda x : x[0].lower())
+
+    ret = '<div class="%s">' % ("tag" + display)
+    for tag, count in tags:
+        ret += "<div>%dx %s</div>\n" % (count, util.link("games?tag=" + tag, tag))
+    ret += "</div>"
+    return templated_page('tags.html', title = 'OHR Archive - Tags',
+                          content = ret, sort = sorttype, display = display, threshold = threshold,
+                          topnote = util.link("/", "Back to root ..."))
 
 ################################################################################
 
@@ -645,5 +679,7 @@ def application(environ, start_response):
         return render_games(path)
     elif path[0] == "zips":
         return handle_zips(path)
+    elif path[0] == "tags":
+        return render_tags(path)
     else:
         return notfound(reqinfo.path + " not found")

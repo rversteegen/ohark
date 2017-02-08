@@ -136,3 +136,24 @@ table.zipinfo td {
     margin: 0.5em;
     color: #eee;
 }
+
+/************************************ Tags ***********************************/
+
+.tagcloud div {
+    float: left;
+    display: block;
+    padding: 0.3em 0.5em;
+    margin: 1px;
+    border-right-style: dashed;
+    border-width: 1px;
+    font-size: 80%;
+}
+
+.tagcloud a {
+    text-decoration: unset;
+    font-size: 15px;
+
+}
+.taglist div {
+    padding: 0.1em 1em;
+}

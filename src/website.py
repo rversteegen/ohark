@@ -163,10 +163,17 @@ def gamelist_filter_game(game):
         if game.author not in reqinfo.query['author']:
             return False
     if 'search' in reqinfo.query:
+        found = False
         for term in reqinfo.query['search']:
-            if (term in game.author or term in game.name
-                or term in game.description):
+            term = term.lower()
+            if (term in game.author.lower() or term in game.name.lower()
+                or term in game.description.lower() or term in game.tags):
                 break
+            for screenshot in game.screenshots:
+                if screenshot.description and term in screenshot.description.lower():
+                    found = True
+                    break
+            if found: break
         else:
             return False
     return True
@@ -480,6 +487,7 @@ def handle_gallery(path):
 
     topnote = util.link("/", "Back to root ...") + "\n"
     ret = "<p>" + info + "</p>"
+    ret += "<p>" + gamelist_describe_filter() + "</p>"
     for gameurl, gamename, gameauthor, screenshot in screenshots[:pagesize]:
         ret += util.link(gameurl, screenshot.img_tag('%s by %s' % (gamename, gameauthor)))
 

@@ -215,9 +215,9 @@ def render_games(path):
     # If there is a filter active, say so
     filterinfo = gamelist_describe_filter()
 
-    return render_games_table(keyed_games, "All games", 0, filterinfo, numtotal)
+    return render_games_table(keyed_games, "All games", 0, filterinfo, numtotal, show_source = True)
 
-def render_games_table(keyed_games, list_title, is_gamelist, filterinfo, numtotal):
+def render_games_table(keyed_games, list_title, is_gamelist, filterinfo, numtotal, show_source = False):
     """
     Generate a page with a table containing a list of games.
 
@@ -225,23 +225,28 @@ def render_games_table(keyed_games, list_title, is_gamelist, filterinfo, numtota
     list_title:   What title to put on the page
     is_gamelist:  True if this is one of the imported game lists, not a list of .rpgs.
     filterinfo:   Extra info shown at the top.
+    show_source:  Add the 'Source' column.
     """
     zips_db = gamedb.DataBaseLayer.load('zips')
     # Generate a table as a list-of-lists, so it can be sorted
     if is_gamelist:
         headers = 'Name', 'Author', 'Link', 'Download?', 'Description'
     else:
-        headers = 'Name', 'Description'
+        headers = 'Name', 'Download?', 'Description'
+    if show_source:
+        headers = ('Source',) + headers
     table = []
     for dbname, gameid, game in keyed_games:
         row = []
-        row.append( game.name.lower().strip() )  # sort key
+        row.append( game.name.lower().strip() )  # sort key 
+        if show_source:
+            row.append( dbname )
         row.append( util.link('gamelists/%s/%s/' % (dbname, gameid), game.get_name()) )
         if is_gamelist:
             #util.link(game.author_link, game.get_author())
             row.append( game.get_author() )
             row.append( game.url and util.link(game.url, u"➔") )
-            row.append( get_game_download_summary(game, zips_db) )
+        row.append( get_game_download_summary(game, zips_db) )
         row.append( util.shorten(util.strip_html(game.description), 150) )
         table.append(row)
     table.sort()
@@ -329,7 +334,10 @@ def get_game_downloads_info(game):
 
 def get_game_download_summary(game, zips_db):
     """Tell whether a game has a download available"""
-    if not game.downloads:
+    if game.archives:
+        # Assume the zip is actually downloadable (FIXME: return Yes for loose .rpgs too)
+        return "Yes"
+    if not game.downloads and not game.website:
         return "No"
     for download in game.downloads:
         key = download.zipkey()

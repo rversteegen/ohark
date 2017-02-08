@@ -12,7 +12,7 @@ import re
 import os.path
 import posixpath
 
-from urlimp import urlparse, urlencode, urlopen, urlretrieve
+from urlimp import urlparse, urlencode, urlopen, urlretrieve, HTTPError
 import util
 from util import py2, tostr
 import gamedb
@@ -93,7 +93,8 @@ def is_subpage_of(base_url):
 class BadUrl(BadInput): pass
 
 def get_url(url, post_data = None, verbose = False, cache = True):
-    """Download a URL or fetch it from the cache, and return bytes"""
+    """Download a URL or fetch it from the cache, and return bytes.
+    Raises BadUrl if it can't be downloaded."""
     # Get 'path': local location of cached file
     parsed = urlparse(url)
     path = page_cache + '/' + parsed.netloc + '/' + parsed.path
@@ -129,23 +130,19 @@ def get_url(url, post_data = None, verbose = False, cache = True):
 
         if verbose: print("Retrieving " + url)
 
-        if False:
-            # This checks for redirections, considering them errors
+        if True:
             try:
                 response = urlopen(fullurl)
-            except ValueError as e:
+            except (HTTPError, ValueError) as e:
                 util.create_file(noexist_file)
                 raise BadUrl('Invalid URL "<b>%s</b>": %s' % (url, str(e)))
 
-            # Check whether redirected
-            if fullurl != response.geturl():
-                util.create_file(noexist_file)
-                raise BadUrl("%s does not exist (it redirects to %s)" % (url, response.geturl()))
+            if False:
+                # Check for redirections, considering them errors
+                if fullurl != response.geturl():
+                    util.create_file(noexist_file)
+                    raise BadUrl("%s does not exist (it redirects to %s)" % (url, response.geturl()))
             data = response.read()
-            # python 2: data is hopefully utf-8 encoded bytestream
-            # python 3: data has been decoded to unicode, recode it
-            if not py2:
-                data = data.decode('utf-8')
             try:
                 with open(path, "w") as f:
                     f.write(data)
@@ -155,6 +152,7 @@ def get_url(url, post_data = None, verbose = False, cache = True):
             return data
 
         else:
+            # Doesn't catch 404 errors; returns the error page!
             filename, headers = urlretrieve(fullurl, path, data = encoded_data)
 
     with open(path, 'rb') as fil:

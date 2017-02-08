@@ -373,7 +373,8 @@ def render_game(listname, gameid, game):
         ret += add_row("Appears in", get_game_archives_info(game))
     ret += add_row("Tags", ", ".join(util.link("games?tag=" + tag, tag) for tag in game.tags))
     if game.screenshots:
-        shots = '\n'.join(screenshot_box(shot) for shot in game.screenshots)
+        # Ignore screenshots which are inlined into the description
+        shots = '\n'.join(screenshot_box(shot) for shot in game.screenshots if not shot.is_inline)
         ret += add_row("Screenshots", shots)
     if game.error:
         ret += add_row("Error messages", game.error)

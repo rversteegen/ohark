@@ -18,6 +18,8 @@ from util import py2, tostr
 encoding = 'utf-8'
 #encoding = 'latin-1'
 
+stats = {'inline_screens': 0, 'downloaded_inline': 0}
+
 def process_game_page(url):
     dom = scrape.get_page(url, encoding)
 
@@ -42,6 +44,13 @@ def process_game_page(url):
     #game.description = '\n'.join(line.encode('utf-8').strip() for line in descrip_tag.find_all(string=True))
     # Preserve <br/> tags
     game.description = scrape.tag_contents(descrip_tag)
+
+    # Download any images embedded in the description
+    # (Currently there's only one such game, and all the links are dead!)
+    for img_tag in descrip_tag.find_all('img'):
+        print("Inline screenshot:", img_tag)
+        stats['inline_screens'] += 1
+        stats['downloaded_inline'] += game.add_screenshot(db.name, urljoin(url, img_tag['src']), is_inline = True)
 
     # Download optional
     download_link = dom.find('a', string=re.compile('Download: '))
@@ -122,4 +131,5 @@ else:
     #process_game_page('http://mirror.motherhamster.org/cp/castleparadox.com/gamelist-display.html?game=963')
 
 
+print(stats)
 db.save()

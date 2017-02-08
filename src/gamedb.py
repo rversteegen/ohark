@@ -148,10 +148,14 @@ class DataBaseLayer:
 
 
 class Screenshot:
-    def __init__(self, url, local_path, description = ""):
+    # Defaults for existing objects
+    is_inline = False
+
+    def __init__(self, url, local_path, description = "", is_inline = False):
         self.url = url                 # URL for the original copy
         self.local_path = local_path   # Path of the local copy, if any
         self.description = description
+        self.is_inline = is_inline     # True if the screenshot is already inlined in the game description.
 
     def img_tag(self, title = ""):
         if title and self.description:
@@ -243,18 +247,24 @@ class Game:
         util.mkdir(datadir)
         return datadir
 
-    def add_screenshot(self, dbname, url, description = ""):
+    def add_screenshot(self, dbname, url, description = "", is_inline = False):
         """
         Add a screenshot to this game, and download a local copy too
+        Skips if couldn't download. Returns whether download succeeded.
         """
         # Download the file to datadir
         datadir = self.create_datadir(dbname)
         filename = datadir + url.split('/')[-1]
-        with open(filename, 'wb') as fil:
-            fil.write(scrape.get_url(url))
+        try:
+            with open(filename, 'wb') as fil:
+                fil.write(scrape.get_url(url))
+        except scrape.BadUrl:
+            print("!! Couldn't download " + url)
+            return False
         # Add the screenshot
-        screenshot = Screenshot(url, filename, description)
+        screenshot = Screenshot(url, filename, description, is_inline)
         self.screenshots.append(screenshot)
+        return True
 
     def __repr__(self):
         return 'Game<%s>' % (self.name,)

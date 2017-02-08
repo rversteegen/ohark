@@ -15,6 +15,14 @@ if py2:
 else:
     from io import StringIO
 
+def rewrite_img_urls(url_or_html):
+    "Special cases"
+    # Fix Star Trucker screenshots, which were moved,
+    # and SS smileys
+    return (url_or_html.replace('spacetru.files.wordpress', 'startru.files.wordpress')
+            .replace('src="images/smiles', 'src="http://www.slimesalad.com/forum/images/smiles'))
+
+stats = {'inline_screens': 0, 'downloaded_inline': 0}
 
 # This is optional (OK to fail loading); used for double checking downloads match
 zips_db = gamedb.DataBaseLayer.load('zips')
@@ -55,7 +63,15 @@ def process_game_page(url, gameinfo = None):
     # (Note: same games like Willy's also include <p> html, which gets lost
     #game.description = '\n'.join(line.encode('utf-8').strip() for line in descrip_tag.strings)
     # Preserve all
-    game.description = scrape.tag_contents(descrip_tag)
+    game.description = rewrite_img_urls(scrape.tag_contents(descrip_tag))
+
+    # Download any images embedded in the description
+    for img_tag in descrip_tag.find_all('img'):
+        # But ignore smilies...
+        if not img_tag['src'].startswith('images/smiles'):
+            stats['inline_screens'] += 1
+            img_url = rewrite_img_urls(urljoin(url, img_tag['src']))
+            stats['downloaded_inline'] += game.add_screenshot(db.name, img_url, is_inline = True)
 
     # Downloads
     # Have to match up the downloads on gamedump.php (with the mtimes and
@@ -178,6 +194,7 @@ if __name__ == '__main__':
     #process_game_page('http://www.slimesalad.com/forum/viewgame.php?t=5419')
     db.save()
     gamedb.DataBaseLayer.save('ss_links', link_db)
+    print(stats)
 
     # Tests
     assert srcid_for_SS_link('http://www.slimesalad.com/forum/viewtopic.php?p=15109#15109') == 1021

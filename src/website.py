@@ -615,17 +615,19 @@ def render_page(content, title = 'OHR Archive', topnote = '', status = '200 OK')
         topnote = topnote, footer_info = reqinfo.get_footer()
     ))]
 
-def templated_page(fname, title = 'OHR Archive', topnote = '', status = '200 OK', **kwargs):
+def templated_page(fname, title = 'OHR Archive', topnote = '', status = '200 OK', ignore_missing = False, **kwargs):
     """Try to render an .html link by substituting the corresponding .content.html file into
-    the global template; otherwise return None."""
+    the global template; otherwise return None if 'ignore_missing' or raise an exception."""
     pagename, extn = os.path.splitext(fname)
-    if extn == '.html' and os.path.isfile(pagename + '.content.html'):
-        with open(pagename + '.content.html', 'r') as temp:
-            content = temp.read()
-            if py2:
-                content = content.decode('utf-8')   # read() produced str, not unicode
-            content = content.format(**kwargs)
-            return render_page(content, title = title, topnote = topnote, status = status)
+    if ignore_missing:
+        if not (extn == '.html' and os.path.isfile(pagename + '.content.html')):
+            return None
+    with open(pagename + '.content.html', 'r') as temp:
+        content = temp.read()
+        if py2:
+            content = content.decode('utf-8')   # read() produced str, not unicode
+        content = content.format(**kwargs)
+        return render_page(content, title = title, topnote = topnote, status = status)
 
 def notfound(message):
     return templated_page('404.html', message = message, title = 'OHR Archive - 404', status = '404 Not Found')
@@ -657,10 +659,10 @@ def static_serve(path, environ, start_response):
         return send_file(fname)
     if os.path.isfile(fname + '/index.html'):
         return send_file(fname + '/index.html')
-    ret = templated_page(fname)
+    ret = templated_page(fname, ignore_missing = True)
     if ret:
         return ret
-    ret = templated_page(fname + '/index.html')
+    ret = templated_page(fname + '/index.html', ignore_missing = True)
     if ret:
         return ret
 

@@ -166,11 +166,18 @@ def gamelist_filter_game(game):
         found = False
         for term in reqinfo.query['search']:
             term = term.lower()
+            # FIXME: tags aren't lower-cased, so tags which aren't lower-case can't be found!
             if (term in game.author.lower() or term in game.name.lower()
-                or term in game.description.lower() or term in game.tags):
+                or term in game.description.lower() or term in game.tags
+                or term in game.extra_info):
                 break
             for screenshot in game.screenshots:
                 if screenshot.description and term in screenshot.description.lower():
+                    found = True
+                    break
+            if found: break
+            for download in game.downloads:
+                if term in download.title.lower() or (download.description and term in download.description.lower()):
                     found = True
                     break
             if found: break
@@ -231,7 +238,7 @@ def render_games(path):
     # If there is a filter active, say so
     filterinfo = gamelist_describe_filter()
 
-    return render_games_table(keyed_games, "All games", 0, filterinfo, numtotal, show_source = True)
+    return render_games_table(keyed_games, "All games", True, filterinfo, numtotal, show_source = True)
 
 def render_games_table(keyed_games, list_title, is_gamelist, filterinfo, numtotal, show_source = False):
     """

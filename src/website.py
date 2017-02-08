@@ -279,10 +279,7 @@ def get_game_archives_info(game):
             link = util.link("zips/" + zipkey, zips_db[zipkey].name())
         else:
             link = zipname
-        if srcname in gamedb.SOURCES:
-            link += " on " + gamedb.SOURCES[srcname]['name']
-        else:
-            link += " from collection '%s'" % srcname
+        link += find_game_with_zip(zipkey)
         archive_links.append(link)
     return "<br/>".join(archive_links)
 
@@ -354,16 +351,17 @@ def render_game(listname, gameid, game):
             return '<tr><td class="heading">%s</td><td>%s</td></tr>\n' % (key, val)
         return ''
 
-    ret += add_row("Author", util.link(game.author_link, game.get_author()))
+    if listname != 'rpgs':
+        ret += add_row("Author", util.link(game.author_link, game.get_author()))
     if game.url:
         ret += add_row("Original entry", util.link(game.url, "On " + gamedb.SOURCES[listname]['name']))
     # else:
     #     ret += add_row("Origin/ID", gameid)
-    if game.archives:
-        ret += add_row("Appears in", get_game_archives_info(game))
     if game.website:
         ret += add_row("Website", util.link(game.website, game.website))
     ret += add_row("Description", game.description)
+    if game.archives:
+        ret += add_row("Appears in", get_game_archives_info(game))
     ret += add_row("Tags", game.tags and ", ".join(game.tags))
     if game.screenshots:
         shots = '\n'.join(screenshot_box(shot) for shot in game.screenshots)
@@ -438,6 +436,22 @@ def handle_gallery(path):
 
 ################################################################################
 
+def find_game_with_zip(zipkey):
+    """Figure out which game has a download for this zip file; return a link to it."""
+    srcname, zipname = zipkey.split(':', 1)
+    if srcname not in gamedb.SOURCES:
+        return " from collection '%s'" % srcname
+    location = " on " + gamedb.SOURCES[srcname]['name']
+    games_db = gamedb.GameList.load(srcname)
+    for srcid, game in games_db.games.items():
+        #game = games_db.games
+        for download in game.downloads:
+            if download.zipkey() == zipkey:
+                return " from " + util.link('gamelists/%s/%s' % (srcname, srcid), game.name) + location
+    # This can happen for example with old mirrored versions of downloads on SS,
+    # which are no longer linked to by their game entries. Or reviews on Op:OHR.
+    return " from unknown game" + location + "?"
+
 def render_zip_contents(zips_db, zipkey, fname):
     """
     Handles zips/<zipkey>/<fname> URLs.
@@ -463,6 +477,7 @@ def render_zip(zips_db, zipkey):
     zipdata = zips_db[zipkey]
 
     topnote = util.link("/zips", "Back to index ...") + "\n"
+    downloadable = 'Downloadable ' + find_game_with_zip(zipkey)
     note = note2 = table_html = ""
 
     if zipdata.unreadable:
@@ -489,7 +504,7 @@ def render_zip(zips_db, zipkey):
         note2 = "An error occurred while reading this .zip: " + zipdata.error
 
     format_strs = {'heading': zipdata.name(), 'table': table_html, 'size': zipdata.size,
-                   'mtime': time.ctime(zipdata.mtime), 'note': note, 'note2': note2}
+                   'mtime': time.ctime(zipdata.mtime), 'downloadable': downloadable, 'note': note, 'note2': note2}
     return templated_page('zipinfo.html', topnote = topnote, title = 'OHR Archive - ' + zipdata.name(), **format_strs)
 
 def render_zips(zips_db):

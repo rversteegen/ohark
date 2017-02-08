@@ -26,7 +26,8 @@ OPOHR_URL = 'http://www.castleparadox.com/archive/operationohr/'
 
 encoding = 'latin-1'
 
-statuses = "Finished game", "Demo released", "No demo"
+# See docs/tagging.txt about tag remapping.
+statuses = {"Finished game": "complete", "Demo released": "demo", "No demo": "no demo"}
 
 unique_extns = '.eml', '.pas', '.dsc', '.aut', '.sta', '.url', '.zip'
 expected_extns = '.eml', '.pas', '.dsc', '.aut', '.sta', '.url', '.zip', '.jpg', '.gif', '.LOG', '.cnf'
@@ -134,7 +135,7 @@ def process_game(dirname, path):
             status = None
 
     if status in statuses:
-        game.tags.append(status)
+        game.tags.append(statuses[status])
     elif status:
         print(" Invalid status '%s'" % status)
 

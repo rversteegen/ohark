@@ -51,6 +51,21 @@ def process_game_page(url):
         download.sizestr = tostr(download_link.string[10:])
         game.downloads.append(download)
 
+    # Complete/demo status
+    if dom.find('span', class_='gen', string="Game is in demo stage"):
+        game.tags.append('demo')
+    elif dom.find('span', class_='gen', string="Game is in production"):
+        game.tags.append('in production')
+        # If it has a download, might as well put it in demo too
+        if game.downloads:
+            game.tags.append('demo')
+        else:
+            game.tags.append('no demo')
+    elif dom.find('span', class_='gen', string="This is the final version"):
+        game.tags.append('complete')
+    else:
+        print("!! %s: status not found" % srcid)
+
     # Grab download count and rating
     download_count = dom.find_all(string=re.compile('Download count: '))[0]
     game.download_count = int(download_count.split(': ')[1])

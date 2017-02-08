@@ -1,0 +1,18 @@
+
+This document tries to describe the tagging scheme/provide rules of thumb for tagging games consistently.
+Once it's written, anyway.
+
+Status tags
+===========
+
+SS uses 'complete', 'demo', 'tech demo', 'very incomplete', 'abandoned', 'not available' (only 2x) etc.
+CP uses 'In production', 'Final', 'Demo'.
+OpOHR uses 'No demo', 'Demo released', 'Finished game'.
+
+CP's and OpOHR's labels are mapped when scrapping to 'in production', 'demo',
+'complete', 'no demo'; although 'Final' maybe isn't the same thing as
+'Complete'.
+
+(I've also additionally tagged an CP 'in production' game with 'demo' if it has
+a download or 'no demo' if it doesn't, and changed a few Op:OHR games which were
+'No demo' but did have a download to 'demo'.)

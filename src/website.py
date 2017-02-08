@@ -162,6 +162,13 @@ def gamelist_filter_game(game):
     if 'author' in reqinfo.query:
         if game.author not in reqinfo.query['author']:
             return False
+    if 'search' in reqinfo.query:
+        for term in reqinfo.query['search']:
+            if (term in game.author or term in game.name
+                or term in game.description):
+                break
+        else:
+            return False
     return True
 
 def gamelist_describe_filter():
@@ -173,6 +180,8 @@ def gamelist_describe_filter():
         filters.append("tags " + " or ".join('"%s"' % tag for tag in reqinfo.query['tag']))
     if 'author' in reqinfo.query:
         filters.append("author " + " or ".join('"%s"' % author for author in reqinfo.query['author']))
+    if 'search' in reqinfo.query:
+        filters.append("word " + " or ".join('"%s"' % string for string in reqinfo.query['search']))
     if not filters:
         return ""
     backlink = reqinfo.path  #  Easy way to remove the query

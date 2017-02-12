@@ -22,6 +22,7 @@ SOURCES = {
     "opohr": {'name': "Operation: OHR", 'is_gamelist': True},
     "ss": {'name': "Slime Salad", 'is_gamelist': True},
     "googleplay": {'name': "Google Play", 'is_gamelist': True},
+    "hs": {'name': "HamsterSpeak reviews", 'is_gamelist': True},
     "rpgs": {'name': "Scanned .rpg files", 'is_gamelist': False},
 }
     # "bahamut",

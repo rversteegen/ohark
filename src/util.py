@@ -18,6 +18,11 @@ else:
     tostr = str
 
 
+if py2:
+    # This is needed for piping output.
+    reload(sys)  # Don't know why this is needed...
+    sys.setdefaultencoding('utf-8')
+
 # A high precision wallclock timer
 if os.name == 'posix':
     timer = time.time

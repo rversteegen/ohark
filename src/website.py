@@ -496,7 +496,8 @@ def handle_gallery(path):
     ret = "<p>" + info + "</p>"
     ret += "<p>" + gamelist_describe_filter() + "</p>"
     for gameurl, gamename, gameauthor, screenshot in screenshots[:pagesize]:
-        ret += util.link(gameurl, screenshot.img_tag('%s by %s' % (gamename, gameauthor)))
+        byline = (" by %s" % gameauthor) if gameauthor else ""
+        ret += util.link(gameurl, screenshot.img_tag('%s%s' % (gamename, byline)))
 
     return templated_page('gallery.html', images = ret, title = 'OHRRPGCE Gallery',
                           titletext = titletext, topnote = topnote)

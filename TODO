@@ -2,9 +2,24 @@
 - Game descriptions containing relative img tags (namely, smileys) should have the urls
   updated. For example  http://www.slimesalad.com/forum/viewgame.php?t=4630
 
+- Possibly save and use the width/height style properties of screenshots, e.g.
+  http://superwalrusland.com/ohr/issue59/bf/bf.html
+
+- There are a lot of empty links on HamsterSpeak that are ignored. Should double check
+  whether something is being missed.
+  Also, there are many additional articles that should be included, like top 30
+  results and contest results, eg http://superwalrusland.com/ohr/issue17/8bit/8bit.htm
+
+- Try to support linking to an article in HS using JS to set the frames correct
+  http://www.webdeveloper.com/forum/showthread.php?162006-URL-link-for-specific-frame-combination
+
+- http://www.superwalrusland.com/games/ and
+  http://superwalrusland.com/wiki/index.php?title=Super_Walrus_Games
+
 - There are 19 games on SS with .rar downloads. There are also some games with .tar.gz files,
   but those are just the Mac, and sometimes Linux, versions of games with an alternative
   download.
 
+- http://www.redmurdock.com/ games section
 
-http://castleparadox.com:8007/ohr-archive/gamelists/cp/430/ same rpg twice??
+- http://castleparadox.com:8007/ohr-archive/gamelists/cp/430/ same rpg twice??

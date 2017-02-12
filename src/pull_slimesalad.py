@@ -92,10 +92,6 @@ def process_game_page(url, gameinfo = None):
     #download_tags.sort(key = download_id)   # This also works instead of inverting
     download_tags = download_tags[::-1]
 
-    for a_tag, gamefile in zip(download_tags, gameinfo.files):
-        info, descrip_tag, _ = a_tag.next_siblings
-        print("  ", gamefile.name, download_id(a_tag), a_tag.b.string)
-
     # Sometimes e.g. http://www.slimesalad.com/forum/viewgame.php?t=5996
     # an image is listed as a download, so doesn't appear in gameinfo.files
     #assert len(gameinfo.files) == len(download_tags)
@@ -136,8 +132,9 @@ def process_game_page(url, gameinfo = None):
 
     # Reviews
     game.reviews = []
-    for tag in dom.find_all('a', string='Review'):
-        game.reviews.append(urljoin(url, tag['href']))
+    for tag in dom.find_all('a', string=('Review', 'Second Review')):
+        author = tostr(tag.find_next_sibling('a').string)
+        game.reviews.append(gamedb.Review(urljoin(url, tag['href']), author, location = 'on Slime Salad'))
 
     # Tags
     for tag in dom.find_all(attrs = {'data-tag': True}):

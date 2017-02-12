@@ -18,7 +18,7 @@ from util import py2, tostr
 encoding = 'utf-8'
 #encoding = 'latin-1'
 
-stats = {'inline_screens': 0, 'downloaded_inline': 0}
+stats = {'inline_screens': 0, 'downloaded_inline': 0, 'reviews': 0}
 
 def process_game_page(url):
     dom = scrape.get_page(url, encoding)
@@ -91,7 +91,15 @@ def process_game_page(url):
     # Reviews
     game.reviews = []
     for tag in dom.find_all('a', string=re.compile('Review #')):
-        game.reviews.append(urljoin(url, tag['href']))
+        next_rows = tag.find_parent('tr').find_next_siblings('tr')
+        author = tostr(next_rows[0].a.string)
+        playtime = tostr(next_rows[1].span.string)
+        score = tostr(next_rows[2].span.string).split('Overall: ')[-1]
+        summary = tostr(next_rows[3].span.string)
+        review = gamedb.Review(urljoin(url, tag['href']), author, score = score,
+                               summary = summary, location = 'on Castle Paradox')
+        game.reviews.append(review)
+        stats['reviews'] += 1
 
     # Double-check that there are no NavigableStrings or undecoded strings
     game = scrape.clean_strings(game)

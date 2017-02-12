@@ -167,6 +167,22 @@ class Screenshot:
     def __repr__(self):
         return 'Screenshot<%s, %s>' % (self.local_path.split('/')[-1], self.description or "")
 
+class Review:
+    """
+    A link to a review, retrospective, commentary, or preview elsewhere.
+    """
+    def __init__(self, url, author = "", title = "", byline = '', article_type = "Review", score = "", summary = "", location = ""):
+        self.url = url             # External URL
+        self.author = author       # Author(s) of the article
+        self.byline = byline       # A more detailed description than "<article_type> by <author>"
+        self.title = title         # Title of the article, usually the title of the game
+        self.location = location   # Where the article is, e.g. 'in HamsterSpeak 13'
+        self.article_type = article_type  # Review, Preview, Commentary, Retrospective, Terrible Game Review...
+        self.score = score         # String or number, e.g. "A-", "9.5"
+        self.summary = summary     # One line summary
+
+    def __repr__(self):
+        return 'Review<%s of %s by %s>' % (self.article_type, self.title, self.author)
 
 class DownloadLink:
     """
@@ -231,7 +247,7 @@ class Game:
         self.url = ""                # External URL to this game entry on the original site
         self.screenshots = []        # List of Screenshot objects
         self.downloads = []          # Direct download URLs
-        self.reviews = []            # Direct review URLs
+        self.reviews = []            # List of Reviews
         #self.download_count = None  # Number of times downloaded
         #self.rating = None          # Could be a number or a letter
         self.tags = []               # List of tags (strings)

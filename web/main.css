@@ -110,6 +110,10 @@ table.game {
     padding: 3px 2em;
 }
 
+div.review_summary {
+    padding: 0.5em;
+}
+
 /********************************** Gallery **********************************/
 
 .gallery img {

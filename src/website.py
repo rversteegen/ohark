@@ -343,7 +343,7 @@ def get_game_downloads_info(game):
         if key in zips_db:
             zip = zips_db[key]
             if zip.unreadable:
-                contents_lines.append('Unreadable')
+                contents_lines.append('Unreadable file')
             else:
                 for fname, gamehash in zips_db[key].rpgs.items():
                     rpg = rpgs_db[gamehash]
@@ -354,6 +354,21 @@ def get_game_downloads_info(game):
 
         download_lines.append('<li>%s</li>' % entry)
     return '<ul>%s</ul>' % '\n'.join(download_lines)
+
+def get_game_reviews_info(game):
+    """Generate contents of the Reviews section of a game page"""
+    lines = []
+    for review in game.reviews:
+        byline = review.byline
+        if not byline:
+            byline = review.article_type
+            if review.author:
+                byline += " by %s" % review.author
+        second_line = ''
+        if review.summary:
+            second_line = '<div class="review_summary">%s</div>' % review.summary
+        lines.append('<li>%s %s %s</li>' % (util.link(review.url, byline), review.location, second_line))
+    return '<ul>%s</ul>' % '\n'.join(lines)
 
 def get_game_download_summary(game, zips_db):
     """Tell whether a game has a download available"""
@@ -403,7 +418,8 @@ def render_game(listname, gameid, game):
         ret += add_row("Error messages", game.error)
     if game.downloads:
         ret += add_row("Downloads", get_game_downloads_info(game))
-    ret += add_row("Reviews", game.reviews)
+    if game.reviews:
+        ret += add_row("Reviews", get_game_reviews_info(game))
     info = game.extra_info
     if game.gen:
         info += "\n" + inspect_rpg.get_gen_info(game)

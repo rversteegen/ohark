@@ -42,10 +42,10 @@ def cleanup_string(string):
 
 def get_title_and_author(dom):
     """
-    Find the title and author of an article. The whole byline might also be useful,
-    e.g. "Mini Reviews by Paul Harrington".
+    Find the title, byline and author of an article.
+    The byline is e.g. "Mini Reviews by Paul Harrington".
     This was a bit stupid, since author and title are listed on the
-    spreadsheet of articles provided by PCH.
+    spreadsheet of articles provided by PCH, although often worded differently.
     """
 
     # Find the first two strings on the page, which are usually the
@@ -96,7 +96,7 @@ def get_title_and_author(dom):
     # print('title: ', title)
     # print('byline: ', byline)
     # print('author: ', author)
-    return title, author
+    return title, byline, author
 
 def process_article(issue, url, link_title, category):
     """Add a game review to the DB.
@@ -107,13 +107,13 @@ def process_article(issue, url, link_title, category):
     print(srcid, url, category, " -- ", link_title)
     dom = scrape.get_page(url, encoding)
 
-    title, author = get_title_and_author(dom)
+    title, byline, author = get_title_and_author(dom)
 
     # NOTE: link_title and title may differ; title is sometimes very long.
     # Not sure which to use
     game = gamedb.Game()
     game.name = link_title
-    game.reviews = [(url, author, title, category)]
+    game.reviews = [gamedb.Review(url, author, title, byline, article_type = category, location = 'in HamsterSpeak %s' % issue)]
     stats['reviews'] += 1
 
     for img_tag in dom.find_all('img'):

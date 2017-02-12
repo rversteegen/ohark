@@ -254,7 +254,14 @@ class Game:
         """
         # Download the file to datadir
         datadir = self.create_datadir(dbname, srcid)
-        filename = datadir + url.split('/')[-1]
+        if url.startswith('data:'):
+            # Displaying the screenshot on a page will just work.
+            # However maybe we should host the image as a file? But the data URI
+            # doesn't necessarily say what the filetype is (eg "image/*"),
+            # so the server might give the wrong mime type? Does it matter?
+            filename = datadir + util.md5hash(url)[:7]
+        else:
+            filename = datadir + url.split('/')[-1]
         try:
             with open(filename, 'wb') as fil:
                 fil.write(scrape.get_url(url))

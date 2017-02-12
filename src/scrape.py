@@ -11,6 +11,7 @@ import time
 import re
 import os.path
 import posixpath
+import base64
 
 from urlimp import urlparse, urlencode, urlopen, urlretrieve, HTTPError
 import util
@@ -90,6 +91,13 @@ def is_subpage_of(base_url):
         return href.startswith(base_url)
     return predicate
 
+def get_data_url(uri):
+    """Return the decoded content of a 'data:' URI"""
+    assert ';base64,' in uri
+    mimetype, encoded = uri.split(';base64,')
+    print("Handling data:%s base64-encoded URI" % mimetype)
+    return base64.b64decode(encoded)
+
 class BadUrl(BadInput): pass
 
 def get_url(url, post_data = None, verbose = False, cache = True):
@@ -97,6 +105,8 @@ def get_url(url, post_data = None, verbose = False, cache = True):
     Raises BadUrl if it can't be downloaded."""
     # Get 'path': local location of cached file
     parsed = urlparse(url)
+    if parsed.scheme == 'data':
+        return get_data_url(parsed.path)
     path = page_cache + '/' + parsed.netloc + '/' + parsed.path
     if parsed.query:
         path += '?' + parsed.query

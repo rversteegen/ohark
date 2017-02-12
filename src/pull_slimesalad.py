@@ -71,7 +71,7 @@ def process_game_page(url, gameinfo = None):
         if not img_tag['src'].startswith('images/smiles'):
             stats['inline_screens'] += 1
             img_url = rewrite_img_urls(urljoin(url, img_tag['src']))
-            stats['downloaded_inline'] += game.add_screenshot(db.name, img_url, is_inline = True)
+            stats['downloaded_inline'] += game.add_screenshot(db.name, srcid, img_url, is_inline = True)
 
     # Downloads
     # Have to match up the downloads on gamedump.php (with the mtimes and
@@ -132,7 +132,7 @@ def process_game_page(url, gameinfo = None):
         # caption is either None or a NavigableString
         if caption:
             caption = tostr(caption)
-        game.add_screenshot(db.name, urljoin(url, img_tag['src']), caption)
+        game.add_screenshot(db.name, srcid, urljoin(url, img_tag['src']), caption)
 
     # Reviews
     game.reviews = []

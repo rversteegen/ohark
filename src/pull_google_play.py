@@ -41,12 +41,9 @@ def process_game_page(name, url):
         game.tags.append(tostr(link.span.string))
 
     # Grab screenshots
-    datadir = 'data/%s/%s/' % (db.name, srcid)
-    util.mkdir(datadir)
-
     for num, img in enumerate(dom.find_all('img', class_='full-screenshot')):
         #filename = datadir + 'screen%d.png' % num
-        game.add_screenshot(db.name, img['src'])
+        game.add_screenshot(db.name, srcid, img['src'])
 
     # Double-check that there are no NavigableStrings or undecoded strings
     game = scrape.clean_strings(game)

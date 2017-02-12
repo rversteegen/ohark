@@ -242,18 +242,18 @@ class Game:
     def get_author(self):
         return self.author or "(blank author)"
 
-    def create_datadir(self, dbname):
-        datadir = 'data/%s/%s/' % (dbname, self.name)
+    def create_datadir(self, dbname, srcid):
+        datadir = 'data/%s/%s/' % (dbname, srcid)
         util.mkdir(datadir)
         return datadir
 
-    def add_screenshot(self, dbname, url, description = "", is_inline = False):
+    def add_screenshot(self, dbname, srcid, url, description = "", is_inline = False):
         """
         Add a screenshot to this game, and download a local copy too
         Skips if couldn't download. Returns whether download succeeded.
         """
         # Download the file to datadir
-        datadir = self.create_datadir(dbname)
+        datadir = self.create_datadir(dbname, srcid)
         filename = datadir + url.split('/')[-1]
         try:
             with open(filename, 'wb') as fil:

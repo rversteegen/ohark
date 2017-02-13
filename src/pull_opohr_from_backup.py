@@ -130,7 +130,7 @@ def process_game(dirname, path):
         game.downloads = [gamedb.DownloadLink('opohr', util.id_from_filename(fname), download_url, zip_fname)]
         if status == "No demo":
             print(" %s: Status '%s' but game has a download" % (game.name, status))
-            game.extra_info += "(Note: the page for this game on Op:OHR is missing the download link.)\n"
+            game.extra_info += "(Note: the page for this game on Op:OHR has a missing download link.)\n"
             stats['extradownloads'] += 1
             status = None
 
@@ -141,7 +141,7 @@ def process_game(dirname, path):
 
     for screenshot in by_extn['.jpg'] + by_extn['.gif']:
         # Copy each screenshot to this game's data directory, and register it
-        datadir = game.create_datadir(db.name)
+        datadir = game.create_datadir(db.name, srcid)
         filename = os.path.join(datadir, screenshot)
         screenshot_url = OPOHR_URL + 'gamelist/' + urlimp.quote(dirname + '/' + screenshot)
         shutil.copy2(os.path.join(path, screenshot), filename)

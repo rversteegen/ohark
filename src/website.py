@@ -160,7 +160,10 @@ def gamelist_filter_game(game):
         else:
             return False
     if 'author' in reqinfo.query:
-        if game.author not in reqinfo.query['author']:
+        for term in reqinfo.query['author']:
+            if term.lower() in game.author.lower():
+                break
+        else:
             return False
     if 'search' in reqinfo.query:
         found = False

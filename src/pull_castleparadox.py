@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 """
 Pull game listings from the Castle Paradox game list
+
+Usage:  ./pull_castleparadox.py [--backup]
 """
 from __future__ import print_function
+import sys
 import time
 import re
 from bs4 import BeautifulSoup, NavigableString
@@ -123,7 +126,9 @@ def process_index_page(url, limit = 9999):
 
 
 scrape.TooManyRequests.remaining_allowed = 3000  # Override this safety-check
-if True:
+
+use_backup = len(sys.argv) >= 2 and sys.argv[1] == '--backup'
+if not use_backup:
     db = gamedb.GameList('cp')
 
     process_index_page('http://castleparadox.com/search-gamelist.php?mirror=true')

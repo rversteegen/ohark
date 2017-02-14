@@ -28,11 +28,14 @@ Modules to install:
 > cd src
 > ./pull_castleparadox.py
 > ./pull_slimesalad.py
+> ./pull_hamsterspeak.py
 > ./pull_google_play.py
 These scripts cache all files they download to src/download_cache/
-(about 109MB in total currently) and will not ever download them
+(about 144MB in total currently) and will not ever download them
 again, so re-running will be much faster.
 They also copy the screenshots to src/data/. zip files are not yet downloaded.
+You can also process the motherhamster.org mirror of CP with:
+> ./pull_castleparadox.py --backup
 
 Op:OHR is different, it's imported using a backup of the website directory tree
 instead of scrapping the website. The download is 158MB.

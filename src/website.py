@@ -626,18 +626,13 @@ def handle_zips(path):
 ################################################################################
 ## Top-level application code and WSGI interfacing
 
-with open(STATIC_ROOT + 'page_template.html', 'r') as temp:
-    if py2:
-        PAGE_TEMPLATE = unicode(temp.read())
-    else:
-        PAGE_TEMPLATE = temp.read()
-
 def render_page(content, title = 'OHR Archive', topnote = '', status = '200 OK'):
     """
     Put the content of a dynamic page in the generic template, and return it to the WGSI server.
     """
     reqinfo.set_header(status, [('Content-Type', 'text/html')])
-    return [encode(PAGE_TEMPLATE.format(
+    page_template = util.read_text_file(STATIC_ROOT + 'page_template.html')
+    return [encode(page_template.format(
         content = content, title = title, root = get_website_root(),
         topnote = topnote, footer_info = reqinfo.get_footer()
     ))]

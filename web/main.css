@@ -3,19 +3,33 @@ body {
     color: #dddddd;
     font-family: Courier New;
     font-size: 90%;
-    margin: 1em 0.8em;
+    /* padding: 1em 0.8em; */
 }
 
-.body {
-    border-radius: 1.5em;
+.maincontainer {
+    text-align: center;
+}
+
+.main {
+    text-align: left;
+    border-radius: 2em;
+    border: solid 4px #222;
     background-color: #333;
     padding: 1em 0.5em 1em 0.5em;
-    overflow: auto;    /* Expand to fit all contained floats. */
+    overflow: auto;    /* Expand to fit all contained floats. (Needed for gallery) */
+    /* Causes the size to calculated to fit the contents (shrink-to-fit);
+       needed in case the gamelist table is wider than the screen.
+       Otherwise a scrollbar appears at the bottom on this div instead of bottom of the screen.
+       See http://stackoverflow.com/a/451074/1185152
+       But note that there won't be any margin on the RHS if wide than the screen.
+       Not sure how to fix that yet. */
+    display: inline-block;
+
+    min-width: 60%;
 }
 
 .topnote {
     padding: 0 0 0.8em 1em;
-
 }
 
 h1 {
@@ -24,7 +38,6 @@ h1 {
 h2 {
     margin: 0.5em 0.5em 0.5em 1em;
     font-family: auto;
-
 }
 
 .footer {
@@ -34,6 +47,7 @@ h2 {
     font-size: 75%;
 }
 
+/* Used on table cells which are headings arranged in the left column */
 .heading {
     font-weight: bold;
     font-size: 110%;
@@ -72,6 +86,27 @@ tr {
 td {
     padding: 10px 0px 10px 10px;
 }
+
+/*********************************** Gamelist ********************************/
+/* Plus the table stuff above */
+
+table.gamelist {
+    padding: 10px 10px;
+    min-width: 80%;  /* Thin tables look odd, inconsistent with other tables */
+}
+
+/* Reduce padding a little */
+td.gamelist {
+    padding: 10px 0px 10px 5px;
+}
+th.gamelist {
+    padding: 10px 6px;
+}
+
+col.centered {
+    text-align: center;
+}
+
 
 /********************************* Game pages ********************************/
 
@@ -127,6 +162,10 @@ div.review_summary {
 }
 
 /********************************** Archives *********************************/
+
+.zipinfo th {
+    text-align: center;
+}
 
 table.zipinfo td {
 

@@ -201,3 +201,23 @@ table.zipinfo td {
 .taglist div {
     padding: 0.1em 1em;
 }
+
+/********************************** Sorttable ********************************/
+
+table.sortable th {
+    text-align: center;
+}
+
+table.sortable th:not(.sorttable_sorted):not(.sorttable_sorted_reverse):not(.sorttable_nosort):after {
+    content: "\25B4\25BE";
+    display: block;  /* Display the arrows below */
+    margin: -3px 0;
+}
+#sorttable_sortfwdind {
+    display: block;
+    margin: -3px 0;
+}
+#sorttable_sortrevind {
+    display: block;
+    margin: -3px 0;
+}

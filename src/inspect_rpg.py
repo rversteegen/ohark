@@ -32,6 +32,39 @@ rpg_version_info = {
     20: "2016-03-19 callipygous", # release. Added general.reld (including new version system) and maxScriptCmdID checking.
 }
 
+genLimits = (
+    ("maps",           (genMaxMap,          1, "")),
+    ("textboxes",      (genMaxTextbox,      1, "")),
+    ("attacks",        (genMaxAttack,       1, "")),
+    ("heroes",         (genMaxHero,         1, "")),
+    ("enemies",        (genMaxEnemy,        1, "")),
+    ("formations",     (genMaxFormation,    1, "")),
+    ("palettes",       (genMaxPal,          1, "")),
+    ("masterpals",     (genMaxMasterPal,    1, "master palettes")),
+    ("scripts",        (genNumPlotscripts,  0, "")),
+    ("vehicles",       (genMaxVehicle,      1, "")),
+    ("numtags",        (genMaxTagname,      1, "tags")),   # Not to be confused with Game.tag,
+    ("sfx",            (genMaxSFX,          1, "")),
+    ("songs",          (genMaxSong,         1, "")),
+    ("menus",          (genMaxMenu,         1, "")),
+    ("items",          (genMaxItem,         1, "")),
+    ("elements",       (genNumElements,     0, "")),
+
+    ("herogfx",        (genMaxHeroPic,      1, "hero graphics")),
+    ("smallenemygfx",  (genMaxEnemy1Pic,    1, "small enemy graphics")),
+    ("mediumenemygfx", (genMaxEnemy2Pic,    1, "medium enemy graphics")),
+    ("largeenemygfx",  (genMaxEnemy3Pic,    1, "large enemy graphics")),
+    ("walkaboutgfx",   (genMaxNPCPic,       1, "walkabout graphics")),
+    ("weapongfx",      (genMaxWeaponPic,    1, "weapon graphics")),
+    ("attackgfx",      (genMaxAttackPic,    1, "attack graphics")),
+    ("bordergfx",      (genMaxBoxBorder,    1, "border graphics")),
+    ("portraitgfx",    (genMaxPortrait,     1, "portrait graphics")),
+    ("backdrops",      (genNumBackdrops,    0, "")),
+    ("tilesets",       (genMaxTile,         1, "")),
+)
+
+genLimitsDict = dict(genLimits)
+
 def get_gen_info(game):
     """
     Return a string telling some information extracted from the .gen lump,
@@ -48,17 +81,10 @@ def get_gen_info(game):
 
     info = [
         ".rpg version: %d (%s)" % (gen[genVersion], version_info),
-        "Num maps: %d" % (gen[genMaxMap] + 1),
-        "Num textboxes: %d" % (gen[genMaxTextbox] + 1),
-        "Num formations: %d" % (gen[genMaxFormation] + 1),
-        "Num enemies: %d" % (gen[genMaxEnemy] + 1),
-        "Num backdrops: %d" % gen[genNumBackdrops],
-        "Num tilesets: %d" % (gen[genMaxTile] + 1),
-        "Num scripts: %d" % gen[genNumPlotscripts],
-        "Num songs: %d" % (gen[genMaxSong] + 1),
-        "Num sound effects: %d" % (gen[genMaxSFX] + 1),
         "Battle mode: " + battle_mode,
         "Resolution: %dx%d" % (gen[genResolutionX] or 320, gen[genResolutionY] or 200),
         "Frame rate: %.1fFPS" % (1000. / (gen[genMillisecPerFrame] or 55)),
     ]
+    for key, (genidx, offset, name) in genLimits:
+        info.append("Num %s: %d" % (name or key, gen[genidx] + offset))
     return "\n".join(info)

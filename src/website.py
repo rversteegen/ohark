@@ -11,6 +11,7 @@ import sys
 import time
 import random
 from collections import defaultdict
+from rpg_const import *
 
 import localsite
 #import tabulate
@@ -66,6 +67,9 @@ class RequestInfo:
         self.set_header = start_response
         self.footer_info = ''
         self.DB_timer = util.Timer()  # Time DB loads
+        # Other stuff initialised later:
+        #self.path      # The path part of the URL
+        #self.query     # Query decoded into a Str -> List[Str] mapping
         gamedb.DataBaseLayer.reqinfo = self  # Make DB_timer available to DB code
 
     def get_footer(self):
@@ -243,6 +247,96 @@ def render_games(path):
 
     return render_games_table(keyed_games, "All games", True, filterinfo, numtotal, show_source = True)
 
+def gamelist_extra_column_headers():
+    """
+    Return a list of extra table headers for a gamelist page, according to
+    ?column=... queries.
+    """
+    if 'column' not in reqinfo.query:
+        return []
+    columns = reqinfo.query['column']
+    def getname(column_key):
+        if column_key in inspect_rpg.genLimitsDict:
+            genidx, offset, name = inspect_rpg.genLimitsDict[column_key]
+            return "# " + (name or column_key).title()
+        if column_key == 'size':
+            return "Size KB"
+        return column_key.title()
+    return map(getname, columns)
+
+def gamelist_extra_column_cells(game):
+    """
+    Return a list of extra table cells for a game on a gamelist page,
+    according to ?column=... queries.
+    """
+    if 'column' not in reqinfo.query:
+        return []
+    columns = reqinfo.query['column']
+
+    gen = None
+    ret = []
+    for colname in columns:
+        if colname == 'tags':
+            ret.append(', '.join(game.tags))
+        elif colname == 'screenshots':
+            ret.append(str(len(game.screenshots)))
+        elif colname == 'reviews':
+            ret.append(str(len(game.reviews)))
+        elif colname == 'size':
+            if game.size:
+                ret.append(str(game.size / 1024))
+            else:
+                ret.append("")
+        elif colname in inspect_rpg.genLimitsDict:
+            if not gen and game.gen:
+                gen = game.gen.as_array()
+            if gen:
+                genidx, offset, name = inspect_rpg.genLimitsDict[colname]
+                ret.append(str(gen[genidx] + offset))
+            else:
+                ret.append('N/A')
+        else:
+            ret.append('bad column')
+    return ret
+
+def gamelist_column_checkboxes(is_rpglist, is_gamelist):
+    """
+    Produce the list of <input> tags (checkboxes and hidden fields) to select
+    extra columns on a gamelist page.
+
+    is_rpglist:  Show those suitable for lists of .rpg files
+    is_gamelist: Show those suitable for lists of game entries
+    """
+    ret = ""
+    columns = reqinfo.query.get('column', [])
+
+    def add_checkbox(key, name = None):
+        checked = ""
+        if key in columns:
+            checked = 'checked="1"'
+        return ('<div>%s<input type="checkbox" name="column" value="%s" %s></div>'
+                % (name or key,key, checked))
+
+    boxes = []
+    if is_rpglist:
+        # Show GEN data
+        for key, (genidx, offset, name) in inspect_rpg.genLimits:
+            boxes.append(add_checkbox(key, "Num " + (name or key)))
+        boxes.append(add_checkbox('size'))
+    if is_gamelist:
+        boxes.append(add_checkbox('tags'))
+        boxes.append(add_checkbox('screenshots'))
+        boxes.append(add_checkbox('reviews'))
+    boxes.sort()
+    ret = '\n'.join(boxes)
+
+    # Preserve the rest of the query
+    for key, values in reqinfo.query.items():
+        if key != 'column':
+            for val in values:
+                ret += '<input type="hidden" name="%s" value="%s"></input>' % (key, val)
+    return ret
+
 def render_games_table(keyed_games, list_title, is_gamelist, filterinfo, numtotal, show_source = False):
     """
     Generate a page with a table containing a list of games.
@@ -256,15 +350,17 @@ def render_games_table(keyed_games, list_title, is_gamelist, filterinfo, numtota
     zips_db = gamedb.DataBaseLayer.load('zips')
     # Generate a table as a list-of-lists, so it can be sorted
     if is_gamelist:
-        headers = 'Name', 'Author', 'Link', 'Download?', 'Description'
+        headers = ['Name', 'Author', 'Link', 'Download?', 'Description']
     else:
-        headers = 'Name', 'Download?', 'Description'
+        headers = ['Name', 'Download?', 'Description']
     if show_source:
-        headers = ('Source',) + headers
+        headers = ['Source'] + headers
+    headers = gamelist_extra_column_headers() + headers
     table = []
     for dbname, gameid, game in keyed_games:
         row = []
         row.append( game.name.lower().strip() )  # sort key 
+        row += gamelist_extra_column_cells( game )
         if show_source:
             row.append( dbname )
         row.append( util.link('gamelists/%s/%s/' % (dbname, gameid), game.get_name()) )
@@ -287,8 +383,12 @@ def render_games_table(keyed_games, list_title, is_gamelist, filterinfo, numtota
         lines.append("<tr>" + "".join("<td>%s</td>" % item for item in row) + "</tr>\n")
     table_html += "".join(lines)
 
+    column_form = gamelist_column_checkboxes(not is_gamelist, is_gamelist)
+
     format_strs = {'listname': list_title, 'table': table_html, 'filterinfo': filterinfo,
-                   'numshown': len(table), 'numtotal': numtotal}
+                   'numshown': len(table), 'numtotal': numtotal, 'pageurl': reqinfo.path,
+                   'column_checkboxes': column_form,
+    }
     return templated_page('gamelist.html', topnote = topnote, title = 'OHR Archive - ' + list_title, **format_strs)
 
 def screenshot_box(screenshot):

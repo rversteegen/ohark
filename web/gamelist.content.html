@@ -7,6 +7,13 @@
   and search by author with ?author=..., e.g.
   <a href="gamelists/cp?author=Rimudora">Rimudora</a>.
 </p>
+<p>
+  Extra columns to display:
+  <form class="columns" action="{pageurl}" method="get">
+    {column_checkboxes}
+    <input type="submit" value="Redisplay">
+  </form>
+<p>
 <p>{filterinfo}</p>
 <p>Displaying {numshown} out of {numtotal} games.</p>
 <br/>

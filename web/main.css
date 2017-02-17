@@ -29,7 +29,13 @@ body {
 }
 
 .topnote {
-    padding: 0 0 0.8em 1em;
+    padding: 0 0 0.5em 1.2em;
+    font-style: italic;
+}
+
+.title {
+    font-weight: 900;
+    text-decoration-style: dotted;
 }
 
 h1 {

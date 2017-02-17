@@ -140,7 +140,7 @@ def render_gamelists():
     """
     Generate the gamelists/ page
     """
-    topnote = util.link("/", "Back to root ...") + "\n"
+    topnote = util.link(".", "Back to root ...") + "\n"
     ret = "<h1>Mirrored Gamelists</h1>\n"
     ret += "<p>The following gamelists have been imported:</p>\n<ul>"
     for src, info in sorted(gamedb.SOURCES.items()):
@@ -563,7 +563,7 @@ def render_tags(path):
     ret += "</div>"
     return templated_page('tags.html', title = 'OHR Archive - Tags',
                           content = ret, sort = sorttype, display = display, threshold = threshold,
-                          topnote = util.link("/", "Back to root ..."))
+                          topnote = util.link(".", "Back to root ..."))
 
 ################################################################################
 
@@ -611,7 +611,7 @@ def handle_gallery(path):
         titletext = "Gallery"
     info += util.link(page_url(page = nextpage), "Go to page %d" % nextpage) + "."
 
-    topnote = util.link("/", "Back to root ...") + "\n"
+    topnote = util.link(".", "Back to root ...") + "\n"
     ret = "<p>" + info + "</p>"
     ret += "<p>" + gamelist_describe_filter() + "</p>"
     for gameurl, gamename, gameauthor, screenshot in screenshots[:pagesize]:
@@ -703,7 +703,7 @@ def render_zips(zips_db):
     for zipkey in sorted(zips_db.keys()):
         ret += "<li>%s</li>\n" % util.link("zips/" + zipkey, zipkey)
     ret += "</ul>"
-    return render_page(ret, topnote = util.link("/", "Back to root ..."))
+    return render_page(ret, topnote = util.link(".", "Back to root ..."))
 
 def handle_zips(path):
     """

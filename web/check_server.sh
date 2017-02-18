@@ -3,11 +3,7 @@
 PSINFO=$(ps aux|grep local_server.py | grep -v grep)
 PID=$(echo $PSINFO | cut -d ' ' -f2)
 if [ -n "$PID" ]; then
-    echo "Killing::"
     ps u --pid $PID
-    kill $PID
-    echo :stopping: $(date) >> process_log.txt
-    echo $PSINFO >> process_log.txt
 else
     echo "Not running!"
 fi

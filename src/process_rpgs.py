@@ -41,7 +41,7 @@ def process_sources(db_name, sources):
             zipkey = zipinfo.src + ":" + util.id_from_filename(fname)
             print("Processing ZIP", zipkey)
             assert zipkey not in zips_db
-            zipdata = gamedb.ScannedZipData(zipinfo, unescape_filename(fname))
+            zipdata = gamedb.ScannedZipData(zipinfo, util.unescape_filename(fname))
             zips_db[zipkey] = zipdata
             if zipdata.unreadable:
                 continue   # We didn't read any games from this zip

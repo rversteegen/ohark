@@ -2,6 +2,7 @@
 from __future__ import print_function
 import re
 
+import os
 import scrape
 import urlimp
 from urlimp import urljoin
@@ -161,7 +162,27 @@ def process_index_page(url, limit = 9999):
         if limit <= 0:
             break
 
-link_db = gamedb.DataBaseLayer.load('ss_links')
+def list_downloads_by_mod_date(url, limit = 9999):
+    """
+    See which downloads have been modified recently
+    (Not used anyway; useful utility function)
+    """
+    print("Fetching/parsing page...")
+    page = scrape.get_url(url).decode('windows-1252')
+
+    files = []  # timestamp -> info
+
+    file = StringIO(page)
+    for chunk in ChunkReader(file).each():
+        game = GameInfo(chunk)
+        ginfo = "%s  %s %s" % (game.name.ljust(42), game.author.ljust(15), game.url)
+        for fil in game.files:
+            if os.path.splitext(fil.name.lower())[1] not in ('.png'):
+                files.append( (fil.date, ginfo + "  " + fil.name))
+
+    files.sort(reverse=1)
+    for date, info in files[:52]:
+        print(date, info)
 
 def srcid_for_SS_link(url):
     """
@@ -185,7 +206,10 @@ def srcid_for_SS_link(url):
     return None
 
 if __name__ == '__main__':
+    #list_downloads_by_mod_date('http://www.slimesalad.com/forum/gamedump.php')
+
     db = gamedb.GameList('ss')
+    #link_db = gamedb.DataBaseLayer.load('ss_links')
     link_db = {'p2t':{}, 't2p':{}}  # post -> topic and topic -> post mappings
     process_index_page('http://www.slimesalad.com/forum/gamedump.php')
     #process_game_page('http://www.slimesalad.com/forum/viewgame.php?t=5419')

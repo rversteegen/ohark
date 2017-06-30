@@ -4,6 +4,11 @@ Disallow: /ohr_archive/games
 Disallow: /ohr_archive/tags
 Disallow: /ohr_archive/gallery
 Disallow: /ohr_archive/zips
+Disallow: /ohr-archive/gamelists
+Disallow: /ohr-archive/games
+Disallow: /ohr-archive/tags
+Disallow: /ohr-archive/gallery
+Disallow: /ohr-archive/zips
 Disallow: /gamelists
 Disallow: /games
 Disallow: /tags

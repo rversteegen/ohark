@@ -1,0 +1,52 @@
+==  IDEAS  ==
+Searching Games:
+
+    Compare one game toother games. Amount of Maps, Textboxes, Heros, Enemies, Attacks,Songs etc. 
+
+    Filter Games:display only Games that, e.g. use multiple colorpallets or more than 500 textboxes or less than 5 plotscripts,
+
+    Filter/search by genre or ratings  or popularity
+
+    Wich tags are used most on the site and how often? Make the programm internally unifythem ( Roleplaying game = role playing game = rpg ) for better searchresults. 
+
+    Link toSquels/Presquels on series of games
+
+
+Data on a game: 
+
+     We could add somedata it to the Infopage of a game. 
+
+    Downloads perMonth/Week as Histograms, (but we‘d need to track the downloads permonth then.)
+
+    Similiar taggeedgames (to suggest other games)
+
+    Can game be ataggedon the Ohr Archive as well? Then make the programm suggest tags here.Can games be atagged on the Ohr Archive as well? (Could read thetexts from the game‘s textboxes remove words like ‚I‘ or ‚and‘and take the top ten as suggestions.)
+
+
+Data on Author:
+
+    How many games theauthor released since he signed up and how long in average it takesthe author to make a game? The same for all authors. And maybe groupthat data (I need to read up how to do that) and make groups ofauthors who make games fast or take long.
+
+    What game does the author make? Are they all of one genre? All rated low or high? 
+
+
+Data on Contests:
+
+    How many entries were there for contests? If we have the data for contests, so one can see the develoment over time, and also compare the contestsagainst each other. 
+
+    (Maybe contest-wining game could get a badge on the gamelist or something? So it‘s easy to see, or I could suggest that toSlimeSalad.)
+
+
+Useless, funny Data:
+
+    Games that use hero with same name?
+
+     How many times the color X was used in games that use the standart color pallett?
+
+    Wich games with what tags were downloaded most? (If possible: During what time period)
+
+    Make a function for json export of the data. :D 
+
+    A Boxplot for all games and the amount of texts or amount of enemies. Just to see howit varies in the games. Maybe do this for each year or each contest.
+
+

@@ -16,6 +16,12 @@ if py2:
 else:
     from io import StringIO
 
+# Whether to cache the main index and individual game pages
+# (Note: caching game pages may cause problems with listed downloads. Ideally
+# should intelligently figure out which caches to drop)
+CACHE_INDEX = False
+CACHE_GAMES = True
+
 def rewrite_img_urls(url_or_html):
     "Special cases"
     # Fix Star Trucker screenshots, which were moved,
@@ -106,10 +112,15 @@ def process_game_page(url, gameinfo = None):
         title = tostr(a_tag.b.string)  # Display name
         if gameinfo:
             gamefile = gameinfo.file_by_name(title)
-            if gamefile in gameinfo.files:   # it might be in gameinfo.pics instead
-                gameinfo.files.remove(gamefile)
-            assert gamefile.name == title
-            zip_fname = gamefile.url.split('/')[-1]
+            if not gamefile:
+                print("!! Couldn't find %s, maybe the cached game page has a download that's since "
+                      "been removed (not in gamedump.php)" % title)
+                zip_fname = "(Removed)"
+            else:
+                if gamefile in gameinfo.files:   # it might be in gameinfo.pics instead
+                    gameinfo.files.remove(gamefile)
+                assert gamefile.name == title
+                zip_fname = gamefile.url.split('/')[-1]
         else:
             zip_fname = title
         download = gamedb.DownloadLink('ss', zip_fname, download_url, title)
@@ -152,7 +163,7 @@ def process_index_page(url, limit = 9999):
     Generate the db and link_db databases (both global variables)
     """
     print("Fetching/parsing page...")
-    page = scrape.get_url(url).decode('windows-1252')
+    page = scrape.get_url(url, cache = CACHE_INDEX).decode('windows-1252')
 
     file = StringIO(page)
     for chunk in ChunkReader(file).each():

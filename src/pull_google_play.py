@@ -11,11 +11,13 @@ import gamedb
 import util
 from util import py2, tostr
 
+# Whether to cache index pages and individual game pages
 CACHE_INDEX = False
+CACHE_GAMES = True
 
 def process_game_page(url):
     """Returns description"""
-    dom = scrape.get_page(url)
+    dom = scrape.get_page(url, cache = CACHE_GAMES)
 
     assert '?id=' in url and len(url.split('=')) == 2, "Expected only one query in page url, the id"
     srcid = url.split('=')[1]

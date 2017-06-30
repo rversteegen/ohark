@@ -21,10 +21,15 @@ from util import py2, tostr
 encoding = 'utf-8'
 #encoding = 'latin-1'
 
+# Whether to cache the main index and individual game pages
+# Games are updated on CP too infrequently to bother...
+CACHE_INDEX = True
+CACHE_GAMES = True
+
 stats = {'inline_screens': 0, 'downloaded_inline': 0, 'reviews': 0}
 
 def process_game_page(url):
-    dom = scrape.get_page(url, encoding)
+    dom = scrape.get_page(url, encoding, cache = CACHE_GAMES)
 
     assert '?game=' in url and len(url.split('=')) == 2, "Expected only one query in page url, 'game'"
     srcid = url.split('=')[1]
@@ -112,7 +117,7 @@ def process_game_page(url):
 
 def process_index_page(url, limit = 9999):
     print("Fetching/parsing page...")
-    dom = scrape.get_page(url, encoding)
+    dom = scrape.get_page(url, encoding, cache = CACHE_INDEX)
 
     container = dom.find('td', width='410')
     for tag in container.find_all('th'):

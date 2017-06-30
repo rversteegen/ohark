@@ -24,6 +24,7 @@ SOURCES = {
     "googleplay": {'name': "Google Play", 'is_gamelist': True},
     "hs": {'name': "HamsterSpeak reviews", 'is_gamelist': True},
     "rpgs": {'name': "Scanned .rpg files", 'is_gamelist': False},
+    "pepsi": {'name': "Games archived by Pepsi Ranger", 'is_gamelist': False, 'hidden': True},
 }
     # "bahamut",
     # "ouya",
@@ -238,6 +239,7 @@ class Game:
     website = None          # URL for an external website (often just author website)
     archives = None         # List of zipkeys (ids) of every zip file in which this game was found.
     error = ""              # Any error message that occurred when processing the .rpg (errors extracting not included)
+    archinym = None
 
     def __init__(self):
         self.name = ""

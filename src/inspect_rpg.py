@@ -15,6 +15,11 @@ except ImportError:
     print("Running without nohrio+rpgbatch; .rpg inspection not supported")
 
 
+
+def readbit(bytearray, bitnum):
+    """Read a single bit from a np.uint8 array"""
+    return (bytearray[bitnum // 8] >> (bitnum % 8)) & 1
+
 ###########################################################################
 #                                   GEN
 ###########################################################################
@@ -111,7 +116,6 @@ def get_gen_info(game):
 def read_master_palette(rpg, palnum = None):
     "Return a master palette (defaulting to the default) as a list of (r,g,b) triples"
     if rpg.has_lump('palettes.bin'):
-        print('palettes.bin', rpg.lump_size('palettes.bin'))
         if palnum is None:
             gen = rpg.data('gen')
             palnum = gen['masterpal']
@@ -121,10 +125,10 @@ def read_master_palette(rpg, palnum = None):
     else:
         # Most .mas files seem to be 1550 bytes in length, with a lot of
         # garbage at the end
-        print( "mas size", rpg.lump_size('mas'))
         masterpalette = rpg.data('mas', shape = 1)[0]['color']
         def scale(x):
-            return x * 4 + x / 16
+            # magnus.rpg has garbage in MAS 
+            return max(0, min(255, x * 4 + x / 16))
         colours = []
         for col in masterpalette:
             colours.append((scale(col['r']), scale(col['g']), scale(col['b'])))
@@ -153,8 +157,9 @@ def save_titlescreen(rpg, filename):
     """Save a title screen to a file and return True, or False if "Skip title screen" is on."""
     try:
         gen = rpg.data('gen')
-        if gen['bitsets'].view(np.uint16) & (1 << 11):
-            return False # Skip titlescreen
+        if readbit(gen['bitsets'][0], 11):  # Skip titlescreen
+            print("No titlescreen")
+            return False
         else:
             title = read_mxs(rpg, 'mxs', gen['title'])
             pal = read_master_palette(rpg)

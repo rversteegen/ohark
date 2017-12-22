@@ -1,10 +1,23 @@
 """
-Routines for reading information out of game data
+Routines for reading  various data from an .rpg file/.rpgdir, extending
+what rpgbatch provides.
 """
-
+from __future__ import print_function
 from util import py2
 from rpg_const import *
 
+try:
+    import numpy as np
+    from nohrio.ohrrpgce import *
+    from rpgbatch import RPGIterator
+    import PIL.Image
+except ImportError:
+    print("Running without nohrio+rpgbatch; .rpg inspection not supported")
+
+
+###########################################################################
+#                                   GEN
+###########################################################################
 
 # Description of each genVersion value
 rpg_version_info = {
@@ -88,3 +101,65 @@ def get_gen_info(game):
     for key, (genidx, offset, name) in genLimits:
         info.append("Num %s: %d" % (name or key, gen[genidx] + offset))
     return "\n".join(info)
+
+
+###########################################################################
+#                               Titlescreens
+###########################################################################
+
+
+def read_master_palette(rpg, palnum = None):
+    "Return a master palette (defaulting to the default) as a list of (r,g,b) triples"
+    if rpg.has_lump('palettes.bin'):
+        print('palettes.bin', rpg.lump_size('palettes.bin'))
+        if palnum is None:
+            gen = rpg.data('gen')
+            palnum = gen['masterpal']
+
+        masterpalette = rpg.data('palettes.bin', offset = 4)[palnum][0]['color']
+        colours = [tuple(col.tolist()) for col in masterpalette]
+    else:
+        # Most .mas files seem to be 1550 bytes in length, with a lot of
+        # garbage at the end
+        print( "mas size", rpg.lump_size('mas'))
+        masterpalette = rpg.data('mas', shape = 1)[0]['color']
+        def scale(x):
+            return x * 4 + x / 16
+        colours = []
+        for col in masterpalette:
+            colours.append((scale(col['r']), scale(col['g']), scale(col['b'])))
+    return colours
+
+def read_mxs(rpg, lumpname, index):
+    """Returns a 200*320 numpy array with pixel data.
+    lumpname should be 'mxs' for backdrops or 'til' for tilesets."""
+    mxs = rpg.data(lumpname)
+    record = mxs[index]['planes'].reshape((4,200,80))
+    ret = np.empty((200,320), dtype = np.uint8)
+    for plane in range(4):
+        ret[:, plane::4] = record[plane]
+    return ret
+
+def save_paletted_image(pixels, palette, filename):
+    """Write an image file.
+    pixels: a h*w array of palette indices
+    palette: a list of 256 (r,g,b) triples
+    """
+    im = PIL.Image.fromarray(pixels, 'P')
+    im.putpalette(sum(palette, ()))
+    im.save(filename)
+
+def save_titlescreen(rpg, filename):
+    """Save a title screen to a file and return True, or False if "Skip title screen" is on."""
+    try:
+        gen = rpg.data('gen')
+        if gen['bitsets'].view(np.uint16) & (1 << 11):
+            return False # Skip titlescreen
+        else:
+            title = read_mxs(rpg, 'mxs', gen['title'])
+            pal = read_master_palette(rpg)
+            save_paletted_image(title, pal, filename)
+            return True
+    except IOError, e:
+        print("! save_titlescreen failed:", e)
+        return False

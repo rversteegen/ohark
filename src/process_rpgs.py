@@ -13,13 +13,15 @@ import time
 import random
 import numpy as np
 
-import localsite
+import paths
 import nohrio.ohrrpgce
 from rpgbatch import RPGIterator, RPGInfo, ArchiveInfo
 import util
 import scrape
 from gamedb import BinData
 import gamedb
+import inspect_rpg
+
 
 def process_sources(db_name, sources):
     """
@@ -104,6 +106,11 @@ def process_sources(db_name, sources):
 
         if gameinfo.error:
             game.error = "Game appears to be corrupt: " + gameinfo.error
+
+        if rpg:
+            titlescreen_file = '/tmp/titlescreen.png'
+            if inspect_rpg.save_titlescreen(rpg, titlescreen_file):
+                game.add_screenshot_file(games_db.name, gameid, titlescreen_file, "Titlescreen")
 
         # Double-check that there are no undecoded strings
         game = scrape.clean_strings(game)

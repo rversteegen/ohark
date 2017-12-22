@@ -60,3 +60,5 @@ The website uses WSGI so can be hosted using any server directly supporting
 Python webapps. Also, see web/.htaccess to run using Apache's mod_python.
 Also web/flupserve.py is a FastCGI interface for the website, but doesn't
 seem to work with Apache 2.2.
+
+src/paths.py contains configuration variables.

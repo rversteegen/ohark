@@ -117,7 +117,7 @@ def process_article(issue, url, link_title, category):
     stats['reviews'] += 1
 
     for img_tag in dom.find_all('img'):
-        if game.add_screenshot(db.name, srcid, fix_urls(urljoin(url, img_tag['src']))):
+        if game.add_screenshot_link(db.name, srcid, fix_urls(urljoin(url, img_tag['src']))):
             stats['screenshots'] += 1
         else:
             stats['broken_screenshots'] += 1

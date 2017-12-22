@@ -58,7 +58,7 @@ def process_game_page(url):
     for img_tag in descrip_tag.find_all('img'):
         print("Inline screenshot:", img_tag)
         stats['inline_screens'] += 1
-        stats['downloaded_inline'] += game.add_screenshot(db.name, srcid, urljoin(url, img_tag['src']), is_inline = True)
+        stats['downloaded_inline'] += game.add_screenshot_link(db.name, srcid, urljoin(url, img_tag['src']), is_inline = True)
 
     # Download optional
     download_link = dom.find('a', string=re.compile('Download: '))
@@ -94,7 +94,7 @@ def process_game_page(url):
     # Grab screenshot
     img_tag = dom.find('img', class_='zoomable')
     if img_tag:
-        game.add_screenshot(db.name, srcid, urljoin(url, img_tag['src']))
+        game.add_screenshot_link(db.name, srcid, urljoin(url, img_tag['src']))
 
     # Reviews
     game.reviews = []

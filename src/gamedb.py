@@ -4,7 +4,9 @@ Should probably use a real DB, but for now we just use a pickled python object.
 from __future__ import print_function
 import os
 import ctypes
+import shutil
 
+import paths
 import util
 from util import py2
 import scrape
@@ -154,16 +156,26 @@ class Screenshot:
     is_inline = False
 
     def __init__(self, url, local_path, description = "", is_inline = False):
-        self.url = url                 # URL for the original copy
+        self.url = url                 # URL for the original copy, if any
+                                       # (Is empty if we host the only copy)
         self.local_path = local_path   # Path of the local copy, if any
+                                       # (Relative to src/)
         self.description = description
         self.is_inline = is_inline     # True if the screenshot is already inlined in the game description.
 
     def img_tag(self, title = ""):
+        if self.url:
+            # Prefer external link, if one exists
+            url = self.url
+        else:
+            url = paths.local_path_to_url(self.local_path)
         if title and self.description:
             title += "\n"
         title += self.description or ""
-        return '<img src="%s" alt="Screen" title="%s" />' % (self.url, title)
+        if url:
+            return '<img src="%s" alt="Screen" title="%s" />' % (url, title)
+        else:
+            return '%s (No link): %s' % (os.path.basename(self.local_path), title)
 
     def __repr__(self):
         return 'Screenshot<%s, %s>' % (self.local_path.split('/')[-1], self.description or "")
@@ -266,7 +278,7 @@ class Game:
         util.mkdir(datadir)
         return datadir
 
-    def add_screenshot(self, dbname, srcid, url, description = "", is_inline = False):
+    def add_screenshot_link(self, dbname, srcid, url, description = "", is_inline = False):
         """
         Add a screenshot to this game, and download a local copy too
         Skips if couldn't download. Returns whether download succeeded.
@@ -291,6 +303,17 @@ class Game:
         screenshot = Screenshot(url, filename, description, is_inline)
         self.screenshots.append(screenshot)
         return True
+
+    def add_screenshot_file(self, dbname, srcid, path, description = ""):
+        """
+        Add a screenshot to this game, copying an existing file into the data/
+        dir for the game.
+        """
+        datadir = self.create_datadir(dbname, srcid)
+        filename = datadir + os.path.basename(path)
+        shutil.copy2(path, filename)   # copy stat info too
+        screenshot = Screenshot('', filename, description, is_inline = False)
+        self.screenshots.append(screenshot)
 
     def __repr__(self):
         return 'Game<%s>' % (self.name,)

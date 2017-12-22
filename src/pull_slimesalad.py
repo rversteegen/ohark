@@ -31,10 +31,9 @@ def rewrite_img_urls(url_or_html):
 
 stats = {'inline_screens': 0, 'downloaded_inline': 0}
 
-# This is optional (OK to fail loading); used for double checking downloads match
-zips_db = gamedb.DataBaseLayer.load('zips')
-
 def process_game_page(url, gameinfo = None):
+    global zips_db
+
     dom = scrape.get_page(url, 'windows-1252')
 
     #Every game on SS has *four* valid links, for example:
@@ -78,7 +77,7 @@ def process_game_page(url, gameinfo = None):
         if not img_tag['src'].startswith('images/smiles'):
             stats['inline_screens'] += 1
             img_url = rewrite_img_urls(urljoin(url, img_tag['src']))
-            stats['downloaded_inline'] += game.add_screenshot(db.name, srcid, img_url, is_inline = True)
+            stats['downloaded_inline'] += game.add_screenshot_link(db.name, srcid, img_url, is_inline = True)
 
     # Downloads
     # Have to match up the downloads on gamedump.php (with the mtimes and
@@ -140,7 +139,7 @@ def process_game_page(url, gameinfo = None):
         # caption is either None or a NavigableString
         if caption:
             caption = tostr(caption)
-        game.add_screenshot(db.name, srcid, urljoin(url, img_tag['src']), caption)
+        game.add_screenshot_link(db.name, srcid, urljoin(url, img_tag['src']), caption)
 
     # Reviews
     game.reviews = []
@@ -218,6 +217,9 @@ def srcid_for_SS_link(url):
 
 if __name__ == '__main__':
     #list_downloads_by_mod_date('http://www.slimesalad.com/forum/gamedump.php')
+
+    # This is optional (OK to fail loading); used for double checking downloads match
+    zips_db = gamedb.DataBaseLayer.load('zips')
 
     db = gamedb.GameList('ss')
     #link_db = gamedb.DataBaseLayer.load('ss_links')

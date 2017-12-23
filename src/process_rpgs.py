@@ -18,7 +18,7 @@ import nohrio.ohrrpgce
 from rpgbatch import RPGIterator, RPGInfo, ArchiveInfo
 import util
 import scrape
-from gamedb import BinData
+import db_layer
 import gamedb
 import inspect_rpg
 
@@ -78,7 +78,7 @@ def process_sources(db_name, sources):
 
             if rpg.has_lump('fixbits.bin'):
                 with open(rpg.lump_path('fixbits.bin')) as f:
-                    game.fixbits = BinData(f.read())
+                    game.fixbits = db_layer.BinData(f.read())
                 fixBits = nohrio.ohrrpgce.fixBits(rpg.lump_path('fixbits.bin'))
             else:
                 game.fixbits = None
@@ -87,7 +87,7 @@ def process_sources(db_name, sources):
             if not fixBits or not fixBits.wipegen:
                 # In old .rpg files, gen contains garbage; this fixbit indicates if it's been cleaned
                 gen[199:] = 0
-            game.gen = BinData(gen.tostring())
+            game.gen = db_layer.BinData(gen.tostring())
 
         info = [
             "Filename: " + gameinfo.rpgfile,
@@ -120,7 +120,7 @@ def process_sources(db_name, sources):
     iterator.print_summary()
 
     games_db.save()
-    gamedb.DataBaseLayer.save('zips', zips_db)
+    db_layer.save('zips', zips_db)
 
 if len(sys.argv) < 2:
     sys.exit("Specify .rpg files, .rpgdir directories, .zip files, or directories containing any of these as arguments.")

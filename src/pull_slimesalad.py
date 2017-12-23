@@ -6,6 +6,7 @@ import os
 import scrape
 import urlimp
 from urlimp import urljoin
+import db_layer
 import gamedb
 import util
 from util import py2, tostr
@@ -219,15 +220,15 @@ if __name__ == '__main__':
     #list_downloads_by_mod_date('http://www.slimesalad.com/forum/gamedump.php')
 
     # This is optional (OK to fail loading); used for double checking downloads match
-    zips_db = gamedb.DataBaseLayer.load('zips')
+    zips_db = db_layer.load('zips')
 
     db = gamedb.GameList('ss')
-    #link_db = gamedb.DataBaseLayer.load('ss_links')
+    #link_db = db_layer.load('ss_links')
     link_db = {'p2t':{}, 't2p':{}}  # post -> topic and topic -> post mappings
     process_index_page('http://www.slimesalad.com/forum/gamedump.php')
     #process_game_page('http://www.slimesalad.com/forum/viewgame.php?t=5419')
     db.save()
-    gamedb.DataBaseLayer.save('ss_links', link_db)
+    db_layer.save('ss_links', link_db)
     print(stats)
 
     # Tests

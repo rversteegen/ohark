@@ -19,6 +19,7 @@ from paths import *
 import urlimp
 import util
 from util import py2
+import db_layer
 import gamedb
 import inspect_rpg
 import pull_slimesalad
@@ -60,7 +61,7 @@ class RequestInfo:
         # Other stuff initialised later:
         #self.path      # The path part of the URL
         #self.query     # Query decoded into a Str -> List[Str] mapping
-        gamedb.DataBaseLayer.reqinfo = self  # Make DB_timer available to DB code
+        db_layer._reqinfo = self  # Make DB_timer available to DB code
 
     def get_footer(self):
         ret = self.footer_info
@@ -87,7 +88,7 @@ def handle_game_aliases(path, db):
     # ss/p=###/..., where p=### is taken from a game URL, as an alias,
     listname, gameid = path[1], path[2]
     if listname == 'ss' and gameid.startswith('p='):
-        link_db = gamedb.DataBaseLayer.load('ss_links')
+        link_db = db_layer.load('ss_links')
         srcid = link_db['p2t'].get(int(gameid[2:]))
         if not srcid:
             return None
@@ -337,7 +338,7 @@ def render_games_table(keyed_games, list_title, is_gamelist, filterinfo, numtota
     filterinfo:   Extra info shown at the top.
     show_source:  Add the 'Source' column.
     """
-    zips_db = gamedb.DataBaseLayer.load('zips')
+    zips_db = db_layer.load('zips')
     # Generate a table as a list-of-lists, so it can be sorted
     if is_gamelist:
         headers = ['Name', 'Author', 'Link', 'Download?', 'Description']
@@ -393,7 +394,7 @@ def get_game_archives_info(game):
     Generates the "Appears in" info for a game entry for an .rpg file, listing the .zips
     or other locations where it appears.
     """
-    zips_db = gamedb.DataBaseLayer.load('zips')
+    zips_db = db_layer.load('zips')
     archive_links = []
     for zipkey in game.archives:
         srcname, zipname = zipkey.split(':', 1)
@@ -409,8 +410,8 @@ def get_game_downloads_info(game):
     """
     Generates the contents of the Downloads section of a game listing.
     """
-    zips_db = gamedb.DataBaseLayer.load('zips')
-    rpgs_db = gamedb.DataBaseLayer.load('rpgs')
+    zips_db = db_layer.load('zips')
+    rpgs_db = db_layer.load('rpgs')
     download_lines = []
     for downloadlink in game.downloads:
         zipdata = downloadlink.load_zipdata()
@@ -699,7 +700,7 @@ def handle_zips(path):
     """
     Handle all URLs below zips/
     """
-    zips_db = gamedb.DataBaseLayer.load('zips')
+    zips_db = db_layer.load('zips')
     if len(path) == 1:
         # Index
         return render_zips(zips_db)

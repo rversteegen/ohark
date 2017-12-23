@@ -16,6 +16,7 @@ import base64
 from urlimp import urlparse, urlencode, urlopen, urlretrieve, HTTPError
 import util
 from util import py2, tostr
+import db_layer
 import gamedb
 
 #print(sys.stdout.encoding, "encoding")
@@ -235,7 +236,7 @@ def clean_strings(obj):
             #print("list item %s,%s" % (k,v))
             ret.append(clean_strings(v))
         obj = tuple(ret)
-    elif isinstance(obj, gamedb.BinData):
+    elif isinstance(obj, db_layer.BinData):
         # Do not recurse to the binary str
         return obj
     elif hasattr(obj, '__dict__'):

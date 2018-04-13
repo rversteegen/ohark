@@ -56,15 +56,25 @@ class CacheItem:
     "Has two members: .db and .mtime"
 
 
-_cache = {}
-_reqinfo = None  # A RequestInfo object
+class RequestContext:
+    """A instance should be created when beginning a request, to hold
+    request-specific caches, etc.
+    It is a global shared for all DB accesses until a new object is created."""
 
-def _get_timer():
-    if _reqinfo:
-        return _reqinfo.DB_timer
-    else:
-        # Use dummy timer if one hasn't been set.
-        return util.Timer()
+    def __init__(self):
+        # If a DB appears in the quickcache, then no check is made whether it needs to be reloaded:
+        # it is only reloaded once per request.
+        self.quickcache = {}
+        # Time DB loads
+        self.timer = util.Timer()
+        global _context
+        _context = self
+
+
+# _cache holds loaded databases, cached between requests.
+_cache = {}
+_context = RequestContext()  # Dummy value, until set by a real request
+
 
 def db_filename(source_name):
     return DB_DIR + '/' + source_name + '.pickle'
@@ -94,10 +104,16 @@ def load(source_name):
     """
     Loads (with caching) from saved database with the given name if already exists, otherwise returns None.
     """
-    with _get_timer():
-        fname = db_filename(source_name)
+    try:
+        return _context.quickcache[source_name]
+    except:
+        pass
+
+    with _context.timer():
 
         if source_name in _cache:
+            fname = db_filename(source_name)
+
             # Check if the DB has changed since
             if not os.path.isfile(fname):
                 del _cache[source_name]
@@ -113,13 +129,14 @@ def load(source_name):
             if not db:
                 return None
             _cache[source_name] = db
+            _context.quickcache[source_name] = db
         return _cache[source_name].db
 
 def save(source_name, db):
     """
     Save to file, and place in the cache.
     """
-    with _get_timer():
+    with _context.timer():
         util.mkdir(DB_DIR)
         fname = db_filename(source_name)
         with open(fname, 'wb') as dbfile:

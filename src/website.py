@@ -57,16 +57,15 @@ class RequestInfo:
         self.environ = environ
         self.set_header = start_response
         self.footer_info = ''
-        self.DB_timer = util.Timer()  # Time DB loads
+        self.dbcontext = db_layer.RequestContext()
         # Other stuff initialised later:
         #self.path      # The path part of the URL
         #self.query     # Query decoded into a Str -> List[Str] mapping
-        db_layer._reqinfo = self  # Make DB_timer available to DB code
 
     def get_footer(self):
         ret = self.footer_info
-        if self.DB_timer.time:
-             ret += " DB load in %.3fs. " % self.DB_timer.time
+        if self.dbcontext.timer.time:
+             ret += " DB load in %.3fs. " % self.dbcontext.timer.time
         self.req_timer.stop()
         ret += " Page rendered in %.3fs." % self.req_timer.time
         return ret

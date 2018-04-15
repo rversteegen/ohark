@@ -74,11 +74,11 @@ def process_sources(db_name, sources):
             game.name = (gameinfo.longname or gameinfo.rpgfile).decode('latin-1').strip()
             game.description = gameinfo.aboutline.decode('latin-1')
 
-            gen = rpg.general.view(np.int16).copy()
+            game.gen = rpg.general.view(np.int16).copy()
 
             if rpg.has_lump('fixbits.bin'):
                 with open(rpg.lump_path('fixbits.bin')) as f:
-                    game.fixbits = db_layer.BinData(f.read())
+                    game.fixbits = db_layer.bindata(f.read())
                 fixBits = nohrio.ohrrpgce.fixBits(rpg.lump_path('fixbits.bin'))
             else:
                 game.fixbits = None
@@ -86,8 +86,7 @@ def process_sources(db_name, sources):
 
             if not fixBits or not fixBits.wipegen:
                 # In old .rpg files, gen contains garbage; this fixbit indicates if it's been cleaned
-                gen[199:] = 0
-            game.gen = db_layer.BinData(gen.tostring())
+                game.gen[199:] = 0
 
         info = [
             "Filename: " + gameinfo.rpgfile,

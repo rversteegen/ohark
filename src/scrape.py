@@ -12,6 +12,7 @@ import re
 import os.path
 import posixpath
 import base64
+import numpy
 
 from urlimp import urlparse, urlencode, urlopen, urlretrieve, HTTPError
 import util
@@ -226,6 +227,8 @@ def clean_strings(obj):
                 print('Non-ASCII string "%s"' % obj[:60])
                 return obj.decode('latin-1')
         return obj  # Avoid infinite loop iterating a string
+    elif isinstance(obj, numpy.ndarray):
+        pass
     elif hasattr(obj, '__setitem__'):
         for k,v in enumerate(obj):
             #print("list item %s,%s" % (k,v))
@@ -236,9 +239,6 @@ def clean_strings(obj):
             #print("list item %s,%s" % (k,v))
             ret.append(clean_strings(v))
         obj = tuple(ret)
-    elif isinstance(obj, db_layer.BinData):
-        # Do not recurse to the binary str
-        return obj
     elif hasattr(obj, '__dict__'):
         #print("recurse into %s.__dict__" % obj)
         obj.__dict__ = clean_strings(obj.__dict__)

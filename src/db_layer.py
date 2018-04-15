@@ -8,6 +8,7 @@ Should probably use a real DB, but for now they are just saved as .pickle files.
 from __future__ import print_function
 import os
 import ctypes
+import numpy
 
 import util
 from util import py2
@@ -26,28 +27,9 @@ else:
 
 DB_DIR = os.path.join(os.path.dirname(__file__), 'databases')
 
-class BinData(object):
-    """
-    Contains an 8-bit string (str/bytes) which is interpreted as binary data.
-    The main purpose of this class is to allow pickling data with python 2 and loading it
-    with python 3 (which by default would try to decode 8-bit str's to unicode str's).
-    (Alternative to pickling numpy arrays.)
-    """
-    def __init__(self, val):
-        self.val = val
-
-    def __getstate__(self):
-        return self.val  # Not returning self.__dict__ probably also makes the pickling faster/more compact
-
-    def __setstate__(self, val):
-        if type(val) == unistr:
-            self.val = val.encode('latin-1')
-        else:
-            self.val = val
-
-    def as_array(self, ctype = ctypes.c_short):
-        """Create a ctypes array from a string/bytes object with given type."""
-        return util.array_from_string(self.val, ctype)
+def bindata(data, dtype = numpy.uint8):
+    "Turn a bytes into a serialisation format"
+    return numpy.frombuffer(data, dtype)
 
 
 ###############################################################################
@@ -89,14 +71,11 @@ def _load(source_name):
         with open(fname, 'rb') as dbfile:
             print("Loading " + fname)
             ret = CacheItem()
-            if py2:
-                ret.db = pickle.load(dbfile)
-            else:
-                # When loading a DB pickled by Python 2, str becomes bytes and is decoded to a (unicode) str.
-                # Use encoding='latin-1' so that no error is thrown in the case of BinData contents,
-                # which BinData.__setstate__ then converts back to bytes.
-                # Can't use encoding='bytes' because then all dict keys become bytes!!
-                ret.db = pickle.load(dbfile, encoding='latin-1')
+            # When loading a DB pickled by Python 2, str becomes bytes and is decoded to a (unicode) str.
+            # Could use encoding='latin-1' so that no error is thrown for
+            # strings which aren't UTF-8.
+            # Can't use encoding='bytes' because then all dict keys become bytes!!
+            ret.db = pickle.load(dbfile)
             ret.mtime = os.stat(fname).st_mtime
             return ret
 

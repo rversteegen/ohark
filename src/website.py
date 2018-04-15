@@ -263,7 +263,6 @@ def gamelist_extra_column_cells(game):
         return []
     columns = reqinfo.query['column']
 
-    gen = None
     ret = []
     for colname in columns:
         if colname == 'tags':
@@ -278,11 +277,9 @@ def gamelist_extra_column_cells(game):
             else:
                 ret.append("")
         elif colname in inspect_rpg.genLimitsDict:
-            if not gen and game.gen:
-                gen = game.gen.as_array()
-            if gen:
+            if game.gen is not None:
                 genidx, offset, name = inspect_rpg.genLimitsDict[colname]
-                ret.append(str(gen[genidx] + offset))
+                ret.append(str(game.gen[genidx] + offset))
             else:
                 ret.append('N/A')
         else:
@@ -514,7 +511,7 @@ def render_game(listname, gameid, game):
     if game.reviews:
         ret += add_row("Reviews", get_game_reviews_info(game))
     info = game.extra_info
-    if game.gen:
+    if game.gen is not None:
         info += "\n" + inspect_rpg.get_gen_info(game)
     ret += add_row("Info", util.text2html(info))
     ret += add_row("Last modified", game.mtime and time.ctime(game.mtime))

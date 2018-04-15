@@ -5,9 +5,9 @@ what rpgbatch provides.
 from __future__ import print_function
 from util import py2
 from rpg_const import *
+import numpy as np
 
 try:
-    import numpy as np
     from nohrio.ohrrpgce import *
     from rpgbatch import RPGIterator
     import PIL.Image
@@ -88,7 +88,8 @@ def get_gen_info(game):
     Return a string telling some information extracted from the .gen lump,
     given a gamedb.Game object.
     """
-    gen = game.gen.as_array()
+    gen = game.gen
+    #gen = np.frombuffer(game.gen, np.int16)
 
     battle_mode = ({0:"Active-battle", 1:"Turn-based"}
                    .get(gen[genBattleMode], "UNKNOWN! (%d)" % gen[genBattleMode]))
@@ -168,3 +169,8 @@ def save_titlescreen(rpg, filename):
     except IOError, e:
         print("! save_titlescreen failed:", e)
         return False
+
+
+###########################################################################
+#                                Similarity
+###########################################################################

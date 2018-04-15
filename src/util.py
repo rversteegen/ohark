@@ -242,3 +242,7 @@ def shorten(text, maxlen):
 def array_from_string(string, ctype = ctypes.c_short):
     """Create a ctypes array from a string/bytes object with given type."""
     return ctypes.cast(ctypes.create_string_buffer(string), ctypes.POINTER(ctype))
+
+def array_from_bytearray(self, ctype = ctypes.c_short):
+    """Create a ctypes array from a bytestring/bytes object with given type."""
+    return util.array_from_string(self.val, ctype)

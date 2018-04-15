@@ -125,7 +125,7 @@ class Game:
     gen = None              # Contents of .gen lump (numpy.ndarray)
     fixbits = None          # Contents of the fixbits.bin lump (numpy.ndarray)
     website = None          # URL for an external website (often just author website)
-    archives = None         # List of zipkeys (ids) of every zip file in which this game was found.
+    archives = None         # rpg files only: List of zipkeys (ids) of every zip file in which this game was found.
     error = ""              # Any error message that occurred when processing the .rpg (errors extracting not included)
     archinym = None
 

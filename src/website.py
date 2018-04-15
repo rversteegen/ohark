@@ -309,11 +309,13 @@ def gamelist_column_checkboxes(is_rpglist, is_gamelist):
         # Show GEN data
         for key, (genidx, offset, name) in inspect_rpg.genLimits:
             boxes.append(add_checkbox(key, "Num " + (name or key)))
-        boxes.append(add_checkbox('size'))
+        boxes.append(add_checkbox('Size'))
     if is_gamelist:
-        boxes.append(add_checkbox('tags'))
-        boxes.append(add_checkbox('screenshots'))
-        boxes.append(add_checkbox('reviews'))
+        boxes.append(add_checkbox('Tags'))
+        boxes.append(add_checkbox('Screenshots'))
+        boxes.append(add_checkbox('Reviews'))
+        boxes.append(add_checkbox('Download?'))
+        boxes.append(add_checkbox('Scripts?'))
     boxes.sort()
     ret = '\n'.join(boxes)
 
@@ -337,9 +339,9 @@ def render_games_table(keyed_games, list_title, is_gamelist, filterinfo, numtota
     zips_db = db_layer.load('zips')
     # Generate a table as a list-of-lists, so it can be sorted
     if is_gamelist:
-        headers = ['Name', 'Author', 'Link', 'Download?', 'Description']
+        headers = ['Name', 'Author', 'Link', 'Download?', 'Scripts?', 'Description']
     else:
-        headers = ['Name', 'Download?', 'Description']
+        headers = ['Name', 'Download?', 'Scripts?', 'Description']
     if show_source:
         headers = ['Source'] + headers
     headers = gamelist_extra_column_headers() + headers
@@ -355,7 +357,7 @@ def render_games_table(keyed_games, list_title, is_gamelist, filterinfo, numtota
             #util.link(game.author_link, game.get_author())
             row.append( game.get_author() )
             row.append( game.url and util.link(game.url, u"➔") )
-        row.append( get_game_download_summary(game, zips_db) )
+        row += get_game_download_summary(game, zips_db)
         row.append( util.shorten(util.strip_html(game.description), 150) )
         table.append(row)
     table.sort()
@@ -464,17 +466,33 @@ def get_game_download_summary(game, zips_db):
     """Tell whether a game has a download available"""
     if game.archives:
         # Assume the zip is actually downloadable (FIXME: return Yes for loose .rpgs too)
-        return "Yes"
-    if not game.downloads and not game.website:
-        return "No"
+        has_scripts = "No"
+        for key in game.archives:
+            if key in zips_db:
+                if hasattr(zips_db[key], 'scripts') and zips_db[key].scripts:
+                    has_scripts = "Yes"
+        return "Yes", has_scripts
+        return "No", "No"
+
+    has_download = 0
+    has_scripts = 0
+    if game.website:
+        has_download = 1
+        has_scripts = 1
     for download in game.downloads:
         key = download.zipkey()
         if key in zips_db:
             if hasattr(zips_db[key], 'rpgs') and zips_db[key].rpgs:
                 # Has at least one rpg/rpgdir, even if it's corrupt or unextractable
-                return "Yes"
-    # There are download links but we don't recognise them
-    return "?"
+                has_download = "Yes"
+            if hasattr(zips_db[key], 'scripts') and zips_db[key].scripts:
+                has_scripts = "Yes"
+        else:
+            # A download link, but we don't recognise it, eg a .rar file
+            has_download = max(has_download, 1)
+            has_scripts = max(has_scripts, 1)
+    no_maybe_yes = "No", "?", "Yes"
+    return no_maybe_yes[has_download], no_maybe_yes[has_scripts]
 
 def render_game(listname, gameid, game):
     """

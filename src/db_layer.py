@@ -88,7 +88,7 @@ def load(source_name):
     except:
         pass
 
-    with _context.timer():
+    with _context.timer:
 
         if source_name in _cache:
             fname = db_filename(source_name)
@@ -115,7 +115,7 @@ def save(source_name, db):
     """
     Save to file, and place in the cache.
     """
-    with _context.timer():
+    with _context.timer:
         util.mkdir(DB_DIR)
         fname = db_filename(source_name)
         with open(fname, 'wb') as dbfile:

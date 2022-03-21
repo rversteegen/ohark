@@ -95,6 +95,10 @@ gameurls.add('https://play.google.com/store/apps/details?id=com.fyrewulff.swordo
 # https://play.google.com/store/apps/details?id=com.hamsterrepublic.devwaffles
 # https://play.google.com/store/apps/details?id=com.hamsterrepublic.baconthulhu
 
+# https://play.google.com/store/apps/details?id=com.ohrrpgce.necromanceratemycat
+
+###### SEE https://play.google.com/store/search?q=com.ohrrpgce&c=apps&hl=en_US
+
 # Blacklist (non-OHR games):
 gameurls.discard('https://play.google.com/store/apps/details?id=com.hamsterrepublic.MantleMoonSea')
 gameurls.discard('https://play.google.com/store/apps/details?id=com.hamsterrepublic.vocabmosaic')

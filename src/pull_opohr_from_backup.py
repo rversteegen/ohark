@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Pull game listings from the backup files of the Op:OHR website.
 This is more reliable and easier than going through the website,
@@ -6,7 +6,7 @@ and also reveals extra screenshots!
 You can download the op:ohr backup at
 http://tmc.castleparadox.com/ohr/archive/operation_ohr_backup.tar.xz (158MB)
 """
-from __future__ import print_function
+
 import os
 from collections import defaultdict
 import shutil
@@ -15,7 +15,6 @@ import scrape
 import urlimp
 import gamedb
 import util
-from util import py2, tostr
 
 # Point this to where you've extracted the above archive
 OPOHR_PATH = '../operationohr/'

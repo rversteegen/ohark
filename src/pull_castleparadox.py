@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Pull game listings from the Castle Paradox game list
 
 Usage:  ./pull_castleparadox.py [--backup]
 """
-from __future__ import print_function
+
 import sys
 import time
 import re
@@ -14,7 +14,7 @@ import scrape
 from urlimp import urljoin
 import gamedb
 import util
-from util import py2, tostr
+
 
 # Unfortunately some text is utf-8 and some is latin-1.
 # But if each game entry is processed and auto-detected separately, that should be ok.
@@ -40,7 +40,7 @@ def process_game_page(url):
     print ("Processing game:", game.name, "  \tsrcid:", srcid)
 
     author_link = dom.find('span', class_='gen').a
-    game.author = tostr(author_link.string)
+    game.author = str(author_link.string)
     #print(type(game.author), len(game.author), game.author[-1])
     # Some games imported from Op:OHR with no authors link to invalid author ID 0
     if not author_link['href'].endswith('&u=0'):
@@ -65,7 +65,7 @@ def process_game_page(url):
     if download_link:
         # The text for the download link is e.g. "Download: 3.87 MB"
         download = gamedb.DownloadLink('cp', srcid + '.zip', urljoin(url, download_link['href']))
-        download.sizestr = tostr(download_link.string[10:])
+        download.sizestr = str(download_link.string[10:])
         game.downloads.append(download)
 
     # Complete/demo status
@@ -100,10 +100,10 @@ def process_game_page(url):
     game.reviews = []
     for tag in dom.find_all('a', string=re.compile('Review #')):
         next_rows = tag.find_parent('tr').find_next_siblings('tr')
-        author = tostr(next_rows[0].a.string)
-        playtime = tostr(next_rows[1].span.string)
-        score = tostr(next_rows[2].span.string).split('Overall: ')[-1]
-        summary = tostr(next_rows[3].span.string)
+        author = str(next_rows[0].a.string)
+        playtime = str(next_rows[1].span.string)
+        score = str(next_rows[2].span.string).split('Overall: ')[-1]
+        summary = str(next_rows[3].span.string)
         review = gamedb.Review(urljoin(url, tag['href']), author, score = score,
                                summary = summary, location = 'on Castle Paradox')
         game.reviews.append(review)

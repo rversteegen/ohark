@@ -1,11 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Provides get_page for downloading a page from the web or grabbing it from
 a local cache, and some utility routines useful for crawling or scraping webpages.
 """
 
-from __future__ import print_function
+
 import sys
 import time
 import re
@@ -16,16 +16,9 @@ import numpy
 
 from urlimp import urlparse, urlencode, urlopen, urlretrieve, HTTPError
 import util
-from util import py2, tostr
 import db_layer
 import gamedb
 
-#print(sys.stdout.encoding, "encoding")
-
-# if py2:
-#     # For printing unicode to console (otherwise encoding is 'ascii' so unicode can't be encoded)
-#     import codecs
-#     sys.stdout = codecs.getwriter('utf-8')(sys.stdout)
 
 try:
     from mod_python import apache
@@ -197,45 +190,39 @@ def get_page(url, encoding = 'utf-8', cache = True, post_data = None):
 
 def tag_contents(tag):
     "Get the html contents of a BS4 tag. Same as just str(tag), but excludes the tag itself"
-    # Need to convert tags to str/unicode. Must not call 'str' on
-    # a py2 unicode obj, because that attempts to encode it to ascii.
-    return ''.join(tostr(piece) for piece in tag.contents)
+    # Need to convert tags to str
+    return ''.join(str(piece) for piece in tag.contents)
 
-
-if py2:
-    strtypes = (str, unicode)
-else:
-    strtypes = (str, bytes)
 
 def clean_strings(obj):
     """Replace all bs4.element.NavigableStrings in an object
     with regular str/unicode strings.
     NOTE: modifies object inplace only if mutable; so return value should be used."""
     if hasattr(obj, 'items'):
-        for k,v in obj.items():
+        for k, v in obj.items():
             #print("dict item %s,%s" % (k,v))
             obj[k] = clean_strings(v)
-    elif type(obj) == bs4.element.NavigableString:
+    elif isinstance(obj, bs4.element.NavigableString):
         print("NavigableString %s" % obj)
-        obj = tostr(obj)
-    elif isinstance(obj, strtypes):
-        if py2 and isinstance(obj, str):
-            # Check it's valid ascii
-            try:
-                obj.decode()
-            except UnicodeDecodeError:
-                print('Non-ASCII string "%s"' % obj[:60])
-                return obj.decode('latin-1')
+        obj = str(obj)
+    elif isinstance(obj, (str, bytes)):
+        # if py2 and isinstance(obj, str):
+        #     # Check it's valid ascii
+        #     try:
+        #         obj.decode()
+        #     except UnicodeDecodeError:
+        #         print('Non-ASCII string "%s"' % obj[:60])
+        #         return obj.decode('latin-1')
         return obj  # Avoid infinite loop iterating a string
     elif isinstance(obj, numpy.ndarray):
         pass
     elif hasattr(obj, '__setitem__'):
-        for k,v in enumerate(obj):
+        for k, v in enumerate(obj):
             #print("list item %s,%s" % (k,v))
             obj[k] = clean_strings(v)
     elif hasattr(obj, '__getitem__'):
         ret = []
-        for k,v in enumerate(obj):
+        for k, v in enumerate(obj):
             #print("list item %s,%s" % (k,v))
             ret.append(clean_strings(v))
         obj = tuple(ret)

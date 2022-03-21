@@ -4,24 +4,12 @@ import re
 import time
 import ctypes
 import hashlib
-import cgi
+import html
 
 import urlimp
 
 ################################################################################
 ### Util
-
-py2 = sys.version_info[0] == 2
-if py2:
-    tostr = unicode
-else:
-    tostr = str
-
-
-if py2:
-    # This is needed for piping output.
-    reload(sys)  # Don't know why this is needed...
-    sys.setdefaultencoding('utf-8')
 
 # A high precision wallclock timer
 if os.name == 'posix':
@@ -122,18 +110,15 @@ def strip_strings(strings):
     return [x.strip() for x in strings]
 
 def read_text_file(path, encoding = 'utf-8'):
-    "Read the contents of a file, returning unicode string. Python 2/3 wrapper."
-    encarg = {} if py2 else {'encoding': encoding}
-    with open(path, "r", **encarg) as f:
-        if py2:
-            return f.read().decode(encoding)
+    "Read the contents of a file, returning unicode string."
+    with open(path, "r", encoding = encoding) as f:
         return f.read()
 
 def program_output(*args, **kwargs):
     """Runs a program and returns stdout as a string"""
     if 'input' in kwargs:
         input = kwargs['input']
-        if type(input) == str:
+        if isinstance(input, str):
             kwargs['input'] = input.encode()
     proc = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
     return proc.stdout.strip().decode()
@@ -153,13 +138,7 @@ def unescape_filename(fname, encoding = 'latin-1'):
     %xx escape codes, need to remove. Also, Op:OHR has ' in game/filenames double escaped to \\\' !
     And a couple games have leading/trailing whitespace too.
     """
-    if py2:
-        if isinstance(fname, tostr):
-            fname = fname.encode(encoding)  # Re-encode it, because we have to decode it after unquoting
-        fname = urlimp.unquote(fname)
-        fname = fname.decode(encoding)
-    else:
-        fname = urlimp.unquote(fname, encoding = encoding)
+    fname = urlimp.unquote(fname, encoding = encoding)
     return fix_escapes(fname).strip()
 
 def escape_id(ident):
@@ -231,8 +210,8 @@ def link(href, text):
     return '<a href="' + partial_quote(href) + '">' + text + '</a>'
 
 def text2html(obj):
-    """Format raw text to html"""
-    return cgi.escape(obj).replace('\n', '<br>\n')
+    """Format raw text to html. Escapes &, <, > and newlines."""
+    return html.escape(obj, quote=False).replace('\n', '<br>\n')
 
 def shorten(text, maxlen):
     if len(text) > maxlen - 3:

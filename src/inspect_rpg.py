@@ -2,17 +2,16 @@
 Routines for reading  various data from an .rpg file/.rpgdir, extending
 what rpgbatch provides.
 """
-from __future__ import print_function
-from util import py2
+
 from rpg_const import *
 import numpy as np
 
 try:
     from nohrio.ohrrpgce import *
-    from rpgbatch import RPGIterator
+    from rpgbatch.rpgbatch import RPGIterator
     import PIL.Image
-except ImportError:
-    print("Running without nohrio+rpgbatch; .rpg inspection not supported")
+except ImportError as e:
+    print("Running without nohrio+rpgbatch; .rpg inspection not supported: ", e)
 
 
 
@@ -98,11 +97,18 @@ def get_gen_info(game):
         # Add the date of the next version
         version_info += ", until " + rpg_version_info[gen[genVersion] + 1].split()[0]
 
+    ms_per_frame = gen[genMillisecPerFrame] or 55
+    if ms_per_frame == 16:
+        fps = 60
+    elif ms_per_frame == 33:
+        fps = 30
+    else:
+        fps = 1000. / ms_per_frame
     info = [
         ".rpg version: %d (%s)" % (gen[genVersion], version_info),
         "Battle mode: " + battle_mode,
         "Resolution: %dx%d" % (gen[genResolutionX] or 320, gen[genResolutionY] or 200),
-        "Frame rate: %.1fFPS" % (1000. / (gen[genMillisecPerFrame] or 55)),
+        "Frame rate: %.1fFPS" % fps,
     ]
     for key, (genidx, offset, name) in genLimits:
         info.append("Num %s: %d" % (name or key, gen[genidx] + offset))
@@ -128,8 +134,8 @@ def read_master_palette(rpg, palnum = None):
         # garbage at the end
         masterpalette = rpg.data('mas', shape = 1)[0]['color']
         def scale(x):
-            # magnus.rpg has garbage in MAS 
-            return max(0, min(255, x * 4 + x / 16))
+            # magnus.rpg has garbage in MAS
+            return max(0, min(255, x * 4 + x // 16))
         colours = []
         for col in masterpalette:
             colours.append((scale(col['r']), scale(col['g']), scale(col['b'])))
@@ -166,7 +172,7 @@ def save_titlescreen(rpg, filename):
             pal = read_master_palette(rpg)
             save_paletted_image(title, pal, filename)
             return True
-    except IOError, e:
+    except IOError as e:
         print("! save_titlescreen failed:", e)
         return False
 

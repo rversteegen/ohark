@@ -1,21 +1,17 @@
-#!/usr/bin/env python
-from __future__ import print_function
+#!/usr/bin/env python3
+
 import re
 
 import os
 import scrape
 import urlimp
 from urlimp import urljoin
+from io import StringIO
 import db_layer
 import gamedb
 import util
-from util import py2, tostr
 from slimesalad_gamedump import ChunkReader, GameInfo
 
-if py2:
-    from StringIO import StringIO
-else:
-    from io import StringIO
 
 # Whether to cache the main index and individual game pages
 # (Note: caching game pages may cause problems with listed downloads. Ideally
@@ -56,12 +52,12 @@ def process_game_page(url, gameinfo = None):
     link_db['t2p'][topicnum] = postnum
 
     game = gamedb.Game()
-    game.name = tostr(dom.find(class_='title').string)
+    game.name = str(dom.find(class_='title').string)
     game.url = url
     print ("Processing game:", game.name, "  \tsrcid:", srcid)
 
     author_box = dom.find(class_='gameauthor')
-    game.author = tostr(author_box.find(class_='title').string)
+    game.author = str(author_box.find(class_='title').string)
     game.author_link = urljoin(url, util.remove_sid(author_box.a['href']))
 
     # Grab description
@@ -109,7 +105,7 @@ def process_game_page(url, gameinfo = None):
         download_url = urljoin(url, util.remove_sid(a_tag['href']))
         # The title of the download displayed on the page is the original
         # file name, need to use gamedump.php to find the mangled name.
-        title = tostr(a_tag.b.string)  # Display name
+        title = str(a_tag.b.string)  # Display name
         if gameinfo:
             gamefile = gameinfo.file_by_name(title)
             if not gamefile:
@@ -126,7 +122,7 @@ def process_game_page(url, gameinfo = None):
         download = gamedb.DownloadLink('ss', zip_fname, download_url, title)
         download.count = int(info[-2])
         download.sizestr = info[0][1:] + ' ' + info[1][:-1]
-        download.description = descrip_tag.string and tostr(descrip_tag.string)
+        download.description = descrip_tag.string and str(descrip_tag.string)
 
         if zips_db and download.zipkey() in zips_db:
             # Double check we matched the files correcting by checking the sizes match
@@ -139,18 +135,18 @@ def process_game_page(url, gameinfo = None):
         caption = img_tag.parent.find_next_sibling('div', class_='attachheader').string
         # caption is either None or a NavigableString
         if caption:
-            caption = tostr(caption)
+            caption = str(caption)
         game.add_screenshot_link(db.name, srcid, urljoin(url, img_tag['src']), caption)
 
     # Reviews
     game.reviews = []
     for tag in dom.find_all('a', string=('Review', 'Second Review')):
-        author = tostr(tag.find_next_sibling('a').string)
+        author = str(tag.find_next_sibling('a').string)
         game.reviews.append(gamedb.Review(urljoin(url, tag['href']), author, location = 'on Slime Salad'))
 
     # Tags
     for tag in dom.find_all(attrs = {'data-tag': True}):
-        game.tags.append(tostr(tag.a.string))
+        game.tags.append(str(tag.a.string))
 
     # Double-check that there are no NavigableStrings or undecoded strings
     game = scrape.clean_strings(game)

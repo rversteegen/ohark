@@ -5,25 +5,14 @@ pickle-able python objects of arbitrary types, not instances of a specific class
 Should probably use a real DB, but for now they are just saved as .pickle files.
 """
 
-from __future__ import print_function
+
 import os
 import ctypes
 import numpy
+import pickle
 
 import util
-from util import py2
 
-if py2:
-    import cPickle as pickle
-else:
-    import pickle
-
-if py2:
-    bytesstr = str
-    unistr = unicode
-else:
-    bytesstr = bytes
-    unistr = str
 
 DB_DIR = os.path.join(os.path.dirname(__file__), 'databases')
 

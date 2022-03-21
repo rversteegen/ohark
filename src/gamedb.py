@@ -1,13 +1,12 @@
 """
 The Game and related classes.
 """
-from __future__ import print_function
+
 import os
 import shutil
 
 import paths
 import util
-from util import py2
 import scrape
 import db_layer
 
@@ -241,7 +240,7 @@ class ScannedZipData:
         if not self.unreadable:
             # Create .rpgs, the fname -> srcid mapping, by truncated the md5 hashs
             self.rpgs = dict(zipinfo.rpgs)
-            for fname, hash in self.rpgs.items():
+            for fname, hash in list(self.rpgs.items()):
                 # hash is None if the game couldn't even be extracted,
                 # (or it might be missing entirely
                 # but is valid if the game was corrupt.

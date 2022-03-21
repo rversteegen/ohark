@@ -1,11 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Process data from a g_debug.txt dump produced by tmc's rpgbrowse_printer branch,
 which log info about .rpg files as you browse around,
 and specifically the games listing provided by Pepsi Ranger.
 """
 
-from __future__ import print_function
+
 import time
 import datetime
 import calendar
@@ -16,7 +16,6 @@ import scrape
 from urlimp import urljoin
 import gamedb
 import util
-from util import py2, tostr
 
 # Unfortunately some text is utf-8 and some is latin-1.
 # But if each game entry is processed and auto-detected separately, that should be ok.

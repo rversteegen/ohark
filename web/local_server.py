@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # NOTE: if the scrapers are run as python 3 and the server as python 2,
 # then Game can't be unpickled because __new__ is missing. All other combos work.

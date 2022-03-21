@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 This module builds a DB by scanning .zip files.
 It depends on nohrio (rpgbatch fork) and rpgbatch which need to be in the path.
@@ -6,7 +6,7 @@ See http://rpg.hamsterrepublic.com/ohrrpgce/nohrio
 and tools/rpgbatch/rpgbatch.py in the OHRRPGCE repository.
 (http://rpg.hamsterrepublic.com/source/tools/rpgbatch/rpgbatch.py)
 """
-from __future__ import print_function
+
 import os
 import sys
 import time
@@ -15,7 +15,7 @@ import numpy as np
 
 import paths
 import nohrio.ohrrpgce
-from rpgbatch import RPGIterator, RPGInfo, ArchiveInfo
+from rpgbatch.rpgbatch import RPGIterator, RPGInfo, ArchiveInfo
 import util
 import scrape
 import db_layer
@@ -50,7 +50,7 @@ def process_sources(db_name, sources):
 
             # Now that we've added this zip to the DB,
             # point every game in it to the DB entry for this zip file.
-            for fname, gameid in zipdata.rpgs.items():
+            for gameid in zipdata.rpgs.values():
                 # If the game was corrupt, then it didn't get added to the DB
                 if gameid in games_db.games:
                     games_db.games[gameid].archives.append(zipkey)
@@ -71,13 +71,13 @@ def process_sources(db_name, sources):
             # Read some data out of the .rpg file, including .gen and fixbits lumps
 
             print(" > ", gameinfo.longname, " --- ", gameinfo.aboutline)
-            game.name = (gameinfo.longname or gameinfo.rpgfile).decode('latin-1').strip()
-            game.description = gameinfo.aboutline.decode('latin-1')
+            game.name = (gameinfo.longname or gameinfo.rpgfile).strip()
+            game.description = gameinfo.aboutline
 
             game.gen = rpg.general.view(np.int16).copy()
 
             if rpg.has_lump('fixbits.bin'):
-                with open(rpg.lump_path('fixbits.bin')) as f:
+                with open(rpg.lump_path('fixbits.bin'), 'rb') as f:
                     game.fixbits = db_layer.bindata(f.read())
                 fixBits = nohrio.ohrrpgce.fixBits(rpg.lump_path('fixbits.bin'))
             else:
@@ -90,7 +90,7 @@ def process_sources(db_name, sources):
 
         info = [
             "Filename: " + gameinfo.rpgfile,
-            "Size: %d KB" % (game.size / 1024),
+            "Size: %d KB" % round(game.size / 1024),
             "md5: " + gameinfo.hash,
         ]
         if rpg:

@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Pull game listings from the Op:OHR game list, parsing the HTML.
 UNFINISHED! Only pulls author name. I've abandoned this in favour of
 pull_opohr_from_backup.py
 """
-from __future__ import print_function
+
 import time
 import re
 from bs4 import BeautifulSoup, NavigableString
@@ -13,7 +13,7 @@ import scrape
 import urlimp
 import gamedb
 import util
-from util import py2, tostr
+
 
 encoding = 'latin-1'
 
@@ -34,7 +34,7 @@ def process_game_page(url):
     game = gamedb.Game()
 
     title = dom.find('td', background='line.jpg').b
-    game.name = tostr(dom.find('td', background='line.jpg').b.contents[0])
+    game.name = str(dom.find('td', background='line.jpg').b.contents[0])
     assert game.name == srcid
     game.url = url
     print ("Processing game:", game.name, "  \tsrcid:", srcid)
@@ -49,15 +49,15 @@ def process_game_page(url):
     print([authnext, authnextnext])
     # Authors with email addresses are put in an <a> tag, some
     if authnext.string != '\n':
-        game.author = tostr(authnext.string)
+        game.author = str(authnext.string)
     elif authnextnext.name == 'a':
-        game.author = tostr(authnextnext.string)
+        game.author = str(authnextnext.string)
         if authnextnext['href'] != 'mailto:':
             game.author_link = authnextnext['href']
         else:
             print("blank email")
     else:
-        raise Exception, "Author field not understood"
+        raise Exception("Author field not understood")
 
     # Double-check that there are no NavigableStrings
     game = scrape.clean_strings(game)

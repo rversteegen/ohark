@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # This file is from web/mirror/slimesalad/gamedump.py in the OHRRPGCE
 # SVN repository. Written by James Paige.

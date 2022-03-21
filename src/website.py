@@ -4,7 +4,7 @@ This is the implementation of the frontend. It generates all webpages, and also
 serves static files.
 """
 
-from __future__ import print_function
+
 import os.path
 import cgi
 import sys
@@ -18,7 +18,6 @@ from paths import *
 
 import urlimp
 import util
-from util import py2
 import db_layer
 import gamedb
 import inspect_rpg
@@ -46,8 +45,6 @@ def get_website_root():
 
 def encode(obj):
     """Convert to correct format for returning to WSGI server"""
-    if py2:
-        return unicode(obj).encode('utf-8')
     return str(obj).encode('utf-8')
 
 class RequestInfo:
@@ -252,7 +249,7 @@ def gamelist_extra_column_headers():
         if column_key == 'size':
             return "Size KB"
         return column_key.title()
-    return map(getname, columns)
+    return list(map(getname, columns))
 
 def gamelist_extra_column_cells(game):
     """
@@ -273,7 +270,7 @@ def gamelist_extra_column_cells(game):
             ret.append(str(len(game.reviews)))
         elif colname == 'size':
             if game.size:
-                ret.append(str(game.size / 1024))
+                ret.append(str(game.size // 1024))
             else:
                 ret.append("")
         elif colname in inspect_rpg.genLimitsDict:
@@ -302,7 +299,7 @@ def gamelist_column_checkboxes(is_rpglist, is_gamelist):
         if key in columns:
             checked = 'checked="1"'
         return ('<div>%s<input type="checkbox" name="column" value="%s" %s></div>'
-                % (name or key,key, checked))
+                % (name or key, key, checked))
 
     boxes = []
     if is_rpglist:
@@ -356,7 +353,7 @@ def render_games_table(keyed_games, list_title, is_gamelist, filterinfo, numtota
         if is_gamelist:
             #util.link(game.author_link, game.get_author())
             row.append( game.get_author() )
-            row.append( game.url and util.link(game.url, u"➔") )
+            row.append( game.url and util.link(game.url, "➔") )
         row += get_game_download_summary(game, zips_db)
         row.append( util.shorten(util.strip_html(game.description), 150) )
         table.append(row)
@@ -750,10 +747,7 @@ def templated_page(fname, title = 'OHR Archive', topnote = '', status = '200 OK'
         if not (extn == '.html' and os.path.isfile(pagename + '.content.html')):
             return None
     with open(pagename + '.content.html', 'r') as temp:
-        content = temp.read()
-        if py2:
-            content = content.decode('utf-8')   # read() produced str, not unicode
-        content = content.format(**kwargs)
+        content = temp.read().format(**kwargs)
         return render_page(content, title = title, topnote = topnote, status = status)
 
 def notfound(message):
@@ -803,9 +797,7 @@ def application(environ, start_response):
     path = environ.get('PATH_INFO', '/')
     # For some reason for me for Python 3 wsgiref.simple_server, PATH_INFO
     # is a str but hasn't been decoded as utf-8
-    if not py2:
-        path = path.encode('latin-1')
-    path = path.decode('utf-8')
+    path = path.encode('latin-1').decode('utf-8')
     reqinfo.path = path
     if path.startswith(URL_ROOTPATH):
         path = path[len(URL_ROOTPATH):]
@@ -822,7 +814,7 @@ def application(environ, start_response):
 
     # Convert the query string "?..." into a dictionary
     # mapping to lists of values
-    parameters = cgi.parse_qs(environ.get('QUERY_STRING', ''), keep_blank_values = True)
+    parameters = urlimp.parse_qs(environ.get('QUERY_STRING', ''), keep_blank_values = True)
     reqinfo.query = parameters
 
     # Handle dynamic pages

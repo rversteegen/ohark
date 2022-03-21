@@ -1,8 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Pull game reviews, previews, etc, from HamsterSpeak.
 """
-from __future__ import print_function
+
 from bs4 import BeautifulSoup, NavigableString
 import re
 
@@ -10,7 +10,6 @@ import scrape
 from urlimp import urljoin
 import gamedb
 import util
-from util import py2, tostr
 
 encoding = 'latin-1'
 
@@ -38,7 +37,7 @@ def fix_urls(url):
 
 def cleanup_string(string):
     # The occasional newline in a string...
-    return tostr(string.strip().replace('\r\n', ' ').replace(u'\xa0', ' '))
+    return string.strip().replace('\r\n', ' ').replace('\n', ' ')
 
 def get_title_and_author(dom):
     """

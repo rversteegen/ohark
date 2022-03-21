@@ -1,15 +1,14 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Pull game data from Google Play and add to the DB
 """
-from __future__ import print_function
+
 import time
 
 import scrape
 from urlimp import urljoin
 import gamedb
 import util
-from util import py2, tostr
 
 # Whether to cache index pages and individual game pages
 CACHE_INDEX = False
@@ -23,24 +22,24 @@ def process_game_page(url):
     srcid = url.split('=')[1]
 
     game = gamedb.Game()
-    game.name = tostr(dom.find('div', class_='id-app-title').string)
+    game.name = str(dom.find('div', class_='id-app-title').string)
     game.url = url
     # The download link is fake; has no info. (So leave srcid to indicate.)
     game.downloads = [gamedb.DownloadLink('googleplay', '', url, "For Android")]
     print ("Processing game:", game.name, "  \tsrcid:", srcid)
 
     author_div = dom.find('div', itemprop='author')
-    game.author = tostr(author_div.find(itemprop='name').string)
+    game.author = str(author_div.find(itemprop='name').string)
     game.author_link = urljoin(url, author_div.a['href'])
 
     # Grab description
     descrip_tag = dom.find(itemprop='description')
-    game.description = '\n'.join(tostr(tag) for tag in descrip_tag.div.contents)
+    game.description = '\n'.join(str(tag) for tag in descrip_tag.div.contents)
 
     # Categories (only one per game?)
     game.tags = []
     for link in dom.find_all('a', class_='document-subtitle category'):
-        game.tags.append(tostr(link.span.string))
+        game.tags.append(str(link.span.string))
 
     # Grab screenshots
     for num, img in enumerate(dom.find_all('img', class_='full-screenshot')):

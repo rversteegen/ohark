@@ -135,7 +135,7 @@ def render_gamelists():
             continue
         ret += '<li> <a href="gamelists/%s">%s</a> </li>\n' % (src, info['name'])
     ret += '</ul>'
-    return render_page(ret, title = 'OHR Archive - Gamelists', topnote = topnote)
+    return render_page(ret, title = 'OHRk - Gamelists', topnote = topnote)
 
 def gamelist_filter_game(game):
     """
@@ -375,7 +375,7 @@ def render_games_table(keyed_games, list_title, is_gamelist, filterinfo, numtota
                    'numshown': len(table), 'numtotal': numtotal, 'pageurl': reqinfo.path,
                    'column_checkboxes': column_form,
     }
-    return templated_page('gamelist.html', topnote = topnote, title = 'OHR Archive - ' + list_title, **format_strs)
+    return templated_page('gamelist.html', topnote = topnote, title = 'OHRk - ' + list_title, **format_strs)
 
 def screenshot_box(screenshot):
     """Given a gamedb.Screenshot, return some HTML for it and its description, if any"""
@@ -542,7 +542,7 @@ def render_game(listname, gameid, game):
     ret += add_row("Last modified", game.mtime and time.ctime(game.mtime))
 
     ret += "</tbody></table>\n"
-    return render_page(ret, topnote = topnote, title = 'OHR Archive - ' + game.name)
+    return render_page(ret, topnote = topnote, title = 'OHRk - ' + game.name)
 
 ################################################################################
 
@@ -573,7 +573,7 @@ def render_tags(path):
     for tag, count in tags:
         ret += "<div>%dx %s</div>\n" % (count, util.link("games?tag=" + tag, tag))
     ret += "</div>"
-    return templated_page('tags.html', title = 'OHR Archive - Tags',
+    return templated_page('tags.html', title = 'OHRk Archive - Tags',
                           content = ret, sort = sorttype, display = display, threshold = threshold,
                           topnote = util.link(".", "Back to root ..."))
 
@@ -704,7 +704,7 @@ def render_zip(zips_db, zipkey):
 
     format_strs = {'heading': zipdata.name(), 'table': table_html, 'size': zipdata.size,
                    'mtime': time.ctime(zipdata.mtime), 'downloadable': downloadable, 'note': note, 'note2': note2}
-    return templated_page('zipinfo.html', topnote = topnote, title = 'OHR Archive - ' + zipdata.name(), **format_strs)
+    return templated_page('zipinfo.html', topnote = topnote, title = 'OHRk - ' + zipdata.name(), **format_strs)
 
 def render_zips(zips_db):
     """
@@ -738,7 +738,7 @@ def handle_zips(path):
 ################################################################################
 ## Top-level application code and WSGI interfacing
 
-def render_page(content, title = 'OHR Archive', topnote = '', status = '200 OK'):
+def render_page(content, title = 'OHRk', topnote = '', status = '200 OK'):
     """
     Put the content of a dynamic page in the generic template, and return it to the WGSI server.
     """
@@ -749,7 +749,7 @@ def render_page(content, title = 'OHR Archive', topnote = '', status = '200 OK')
         topnote = topnote, footer_info = reqinfo.get_footer()
     ))]
 
-def templated_page(fname, title = 'OHR Archive', topnote = '', status = '200 OK', ignore_missing = False, **kwargs):
+def templated_page(fname, title = 'OHRk', topnote = '', status = '200 OK', ignore_missing = False, **kwargs):
     """Try to render an .html link by substituting the corresponding .content.html file into
     the global template; otherwise return None if 'ignore_missing' or raise an exception."""
     pagename, extn = os.path.splitext(fname)
@@ -761,7 +761,7 @@ def templated_page(fname, title = 'OHR Archive', topnote = '', status = '200 OK'
         return render_page(content, title = title, topnote = topnote, status = status)
 
 def notfound(message):
-    return templated_page('404.html', message = message, title = 'OHR Archive - 404', status = '404 Not Found')
+    return templated_page('404.html', message = message, title = 'OHRk - 404', status = '404 Not Found')
 
 def redirect(link):
     """

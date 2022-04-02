@@ -145,6 +145,9 @@ def read_mxs(rpg, lumpname, index):
     """Returns a 200*320 numpy array with pixel data.
     lumpname should be 'mxs' for backdrops or 'til' for tilesets."""
     mxs = rpg.data(lumpname)
+    if index < 0 or index >= len(mxs):
+        print(".msx index %d out of range, only %d backdrops" % (index, len(mxs)))
+        return None
     record = mxs[index]['planes'].reshape((4,200,80))
     ret = np.empty((200,320), dtype = np.uint8)
     for plane in range(4):
@@ -169,6 +172,8 @@ def save_titlescreen(rpg, filename):
             return False
         else:
             title = read_mxs(rpg, 'mxs', gen['title'])
+            if title is None:
+                return False
             pal = read_master_palette(rpg)
             save_paletted_image(title, pal, filename)
             return True

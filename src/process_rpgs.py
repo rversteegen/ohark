@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
 This module builds a DB by scanning .zip files.
-It depends on nohrio (rpgbatch fork) and rpgbatch which need to be in the path.
-See http://rpg.hamsterrepublic.com/ohrrpgce/nohrio
-and tools/rpgbatch/rpgbatch.py in the OHRRPGCE repository.
-(http://rpg.hamsterrepublic.com/source/tools/rpgbatch/rpgbatch.py)
+It is invoked by process_archives.sh.
+It depends on nohrio and rpgbatch which need to be in the python path.
+See https://rpg.hamsterrepublic.com/ohrrpgce/nohrio
+and tools/rpgbatch/rpgbatch.py in the OHRRPGCE 'tools' repository.
 """
 
 import os
@@ -39,8 +39,12 @@ def process_sources(db_name, sources):
             zipinfo = yielded
             # The zip files on CP, SS, Op:OHR (by coincidence), Bahamut all have unique names.
             # Others may not. We assume there are no files with duplicate names from the same src.
+            # TODO: I think we need to fix .tar.gz files mangled to .tar_###.gz by SS here
             fname = os.path.split(zipinfo.path)[-1]
             zipkey = zipinfo.src + ":" + util.id_from_filename(fname)
+            if zipkey in zips_db:
+                print("WARNING: zip with duplicate name!", zipinfo.path)
+                continue
             print("Processing ZIP", zipkey)
             assert zipkey not in zips_db
             zipdata = gamedb.ScannedZipData(zipinfo, util.unescape_filename(fname))

@@ -55,6 +55,10 @@ class Screenshot:
     def __repr__(self):
         return 'Screenshot<%s, %s>' % (self.local_path.split('/')[-1], self.description or "")
 
+    def dumpinfo(self):
+        "For debugging"
+        return 'Screenshot<' + repr(self.__dict__) + '>'
+
 class Review:
     """
     A link to a review, retrospective, commentary, or preview elsewhere.
@@ -72,13 +76,18 @@ class Review:
     def __repr__(self):
         return 'Review<%s of %s by %s>' % (self.article_type, self.title, self.author)
 
+    def dumpinfo(self):
+        "For debugging"
+        return 'Review<' + repr(self.__dict__) + '>'
+
 class DownloadLink:
     """
     Info about a download link on a game entry. May point to an element of the 'zips' DB.
     """
     def __init__(self, listname, zipname, external, title = ""):
         self.listname = listname # The ID of the gamelist, eg 'ss'
-        self.zipname = zipname   # The identifier of the zip, equal to util.escape_id(actual_filename)
+        self.zipname = zipname   # The identifier of the zip, used as key and in URLs. Not the filename!
+                                 # process_rpgs requires this to equal util.id_from_filename(actual_filename)
         self.external = external # Official download link (may increase download counter!)
         self.title = title       # The displayed filename or title of the download. Optional.
         self.description = ""
@@ -110,6 +119,9 @@ class DownloadLink:
     def __repr__(self):
         return 'Download<%s %s>' % (self.zipkey(), self.title)
 
+    def dumpinfo(self):
+        "For debugging"
+        return 'DownloadLink<' + repr(self.__dict__) + '>'
 
 class Game:
     """
@@ -153,29 +165,46 @@ class Game:
         util.mkdir(datadir)
         return datadir
 
-    def add_screenshot_link(self, dbname, srcid, url, description = "", is_inline = False):
+    def add_screenshot_link(self, dbname, srcid, url, description = "", is_inline = False, filename = None):
         """
-        Add a screenshot to this game, and download a local copy too
+        Add a screenshot to this game, and download a local copy too (use filename for that)
         Skips if couldn't download. Returns whether download succeeded.
         """
-        # Download the file to datadir
+        if filename is None:
+            if url.startswith('data:'):
+                # Displaying the screenshot on a page will just work.
+                # However maybe we should host the image as a file? But the data URI
+                # doesn't necessarily say what the filetype is (eg "image/*"),
+                # so the server might give the wrong mime type? Does it matter?
+                filename = util.md5hash(url)[:7]
+            else:
+                filename = url.split('/')[-1]
         datadir = self.create_datadir(dbname, srcid)
-        if url.startswith('data:'):
-            # Displaying the screenshot on a page will just work.
-            # However maybe we should host the image as a file? But the data URI
-            # doesn't necessarily say what the filetype is (eg "image/*"),
-            # so the server might give the wrong mime type? Does it matter?
-            filename = datadir + util.md5hash(url)[:7]
-        else:
-            filename = datadir + url.split('/')[-1]
+
+
+        existing_shots = set()
+        for screen in self.screenshots:
+            existing_shots.add(screen.local_path)
+
+        path = datadir + filename
+        idx = 1
+        while path in existing_shots:
+            print(path, "already exists, changing filename")
+            idx += 1
+            parts = os.path.splitext(filename)
+            path = datadir + parts[0] + '_' + str(idx) + parts[1]
+
+        # Download the file to datadir
         try:
-            with open(filename, 'wb') as fil:
+            with open(path, 'wb') as fil:
                 fil.write(scrape.get_url(url))
         except scrape.BadUrl:
             print("!! Couldn't download " + url)
             return False
+
         # Add the screenshot
-        screenshot = Screenshot(url, filename, description, is_inline)
+        screenshot = Screenshot(url, path, description, is_inline)
+        print(screenshot.dumpinfo())
         self.screenshots.append(screenshot)
         return True
 

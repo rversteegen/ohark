@@ -95,10 +95,12 @@ def get_data_url(uri):
 
 class BadUrl(BadInput): pass
 
-def get_url(url, post_data = None, verbose = False, cache = True):
+def get_url(url, post_data = None, verbose = True, cache = True):
     """Download a URL or fetch it from the cache, and return bytes.
     Raises BadUrl if it can't be downloaded."""
     # Get 'path': local location of cached file
+    if cache and 'sid=' in url:
+        print("WARNING: get_url: sid= in url ", url)
     parsed = urlparse(url)
     if parsed.scheme == 'data':
         return get_data_url(parsed.path)
@@ -133,14 +135,12 @@ def get_url(url, post_data = None, verbose = False, cache = True):
         if not parsed.scheme:
             fullurl = 'http:' + url
 
-        if verbose: print("Retrieving " + url)
-
         if True:
             try:
                 response = urlopen(fullurl)
             except (HTTPError, ValueError) as e:
                 util.create_file(noexist_file)
-                raise BadUrl('Invalid URL "<b>%s</b>": %s' % (url, str(e)))
+                raise BadUrl('Invalid URL "%s": %s' % (url, str(e))) from e
 
             if False:
                 # Check for redirections, considering them errors
@@ -149,9 +149,9 @@ def get_url(url, post_data = None, verbose = False, cache = True):
                     raise BadUrl("%s does not exist (it redirects to %s)" % (url, response.geturl()))
             data = response.read()
             try:
-                with open(path, "w") as f:
+                with open(path, 'wb') as f:
                     f.write(data)
-            except e:
+            except OSError as e:
                 print(e)
                 os.unlink(path)
             return data
@@ -163,17 +163,29 @@ def get_url(url, post_data = None, verbose = False, cache = True):
     with open(path, 'rb') as fil:
         return fil.read()
 
-def auto_decode(data, default_encoding = 'utf-8'):
+def auto_decode(data: bytes, default_encoding = 'utf-8'):
+    "Decode a string using charset= metadata, default encoding, or latin-1"
+    # Matches both
+    #   <meta charset="utf-8" />
+    # and
+    #   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    match = re.search(b'charset="?([^"]*)"', data)
+    if match:
+        charset = match.group(1).decode('latin-1')
+        try:
+            return data.decode(charset)
+        except UnicodeDecodeError:
+            pass
     try:
         data = data.decode(default_encoding)
     except UnicodeDecodeError:
         data = data.decode('latin-1')
     return data
 
-def get_page(url, encoding = 'utf-8', cache = True, post_data = None):
+def get_page(url, default_encoding = 'utf-8', cache = True, post_data = None):
     """Download a URL of an HTML page or fetch it from the cache, and return a BS object"""
     data = get_url(url, post_data, cache = cache)
-    data = auto_decode(data, encoding)
+    data = auto_decode(data, default_encoding)
     # Convert non-breaking spaces to spaces
     #data = data.replace(u'\xa0', ' ')
     data = data.replace("&#160;", ' ')

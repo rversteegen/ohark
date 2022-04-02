@@ -1,22 +1,26 @@
 #!/usr/bin/env python3
 
 import re
-
 import os
-import scrape
 import urlimp
 from urlimp import urljoin
 from io import StringIO
+from collections import defaultdict
+
+import scrape
 import db_layer
 import gamedb
 import util
 from slimesalad_gamedump import ChunkReader, GameInfo
 
 
+GAMEDUMP_URL = 'https://www.slimesalad.com/forum/gamedump.php'
+OLD_GAMEDUMP_URL = 'https://www.slimesalad.com/phpbb2/gamedump.php'
+
 # Whether to cache the main index and individual game pages
 # (Note: caching game pages may cause problems with listed downloads. Ideally
 # should intelligently figure out which caches to drop)
-CACHE_INDEX = False
+CACHE_INDEX = True #False
 CACHE_GAMES = True
 
 def rewrite_img_urls(url_or_html):
@@ -24,14 +28,56 @@ def rewrite_img_urls(url_or_html):
     # Fix Star Trucker screenshots, which were moved,
     # and SS smileys
     return (url_or_html.replace('spacetru.files.wordpress', 'startru.files.wordpress')
-            .replace('src="images/smiles', 'src="http://www.slimesalad.com/forum/images/smiles'))
+            .replace('src="images/smiles', 'src="https://www.slimesalad.com/forum/images/smiles')
+            .replace('src="images/smilies', 'src="https://www.slimesalad.com/forum/images/smilies'))
 
-stats = {'inline_screens': 0, 'downloaded_inline': 0}
+def clean_description(descrip_tag):
+    # Delete inline attachments including broken links which display "The attachment
+    # <strong>fname</strong> is no longer available" (happens when image is reuploaded).
+    # Currently https://www.slimesalad.com/forum/viewgame.php?t=8278 is the only game that
+    # puts an inline attachment somewhere other than the bottom -- it puts it at the top.
+    # Just delete inline attachments (other inline images remain inline)
+    for attach in descrip_tag.find_all(class_='inline-attachment'):
+        # Ugh clean this up
+        attach.replace_with()  # Delete
+
+    for tag in descrip_tag.find_all(onclick=True):
+        #print("ONCLICK TAG", tag)
+        if str(tag.string) == "Select all": # code block button, remove it
+            tag.replace_with()
+        else:
+            assert 'ss-spoiler' in tag.get('class')
+
+    for tag in descrip_tag.find_all(class_=True):
+        del tag['class']
+
+    # Remove <br> tags which are added on every newline
+    # (Note: same games like Willy's also include <p> html, which gets lost
+    #return '\n'.join(line.encode('utf-8').strip() for line in descrip_tag.strings)
+    # Preserve all
+    ret = rewrite_img_urls(scrape.tag_contents(descrip_tag))
+
+
+    return ret
+
+
+stats = {'inline_screens': 0, 'downloaded_inline_ok': 0, 'files_processed': 0, 'files_not_on_page': 0, 'files_not_in_gamedump': 0}
+
+seen_tags = defaultdict(int)
 
 def process_game_page(url, gameinfo = None):
     global zips_db
 
-    dom = scrape.get_page(url, 'windows-1252')
+    topicnum = int(url.split('?t=')[-1])
+    if topicnum == 0:
+        # Deleted game
+        # When a game is deleted sometimes there's a phantom gamedump.php entry with garbage data.
+        # And the old URL may either not exist, or go to a Deleted Game page with original author
+        # and review link remnants
+        print("Skipping deleted game")
+        return
+
+    dom = scrape.get_page(url)
 
     #Every game on SS has *four* valid links, for example:
     # http://www.slimesalad.com/forum/viewgame.php?t=1021
@@ -45,38 +91,111 @@ def process_game_page(url, gameinfo = None):
     srcid = url.split('=')[1]
 
     # Update the database mapping between the t= and p= links
-    link = dom.find(alt='Post').parent['href']
-    postnum = int(link.split('#')[-1])
-    topicnum = int(url.split('?t=')[-1])
+    post = dom.find(alt='Post')
+    if post:  # phpbb2
+        link = post.parent['href']
+        phpbb = 2
+    else:  #phpbb3
+        link = dom.find(title='Post')['href']
+        phpbb = 3
+
+    postnum = int(link.split('#')[-1].replace('p', ''))  #phpbb3 prefixes a 'p'
+
     link_db['p2t'][postnum] = topicnum
     link_db['t2p'][topicnum] = postnum
 
+    if gameinfo:
+        gameinfo_files = list(gameinfo.files + gameinfo.pics)
+
+    def seen_file(fname):
+        stats['files_processed'] += 1
+        if gameinfo == None:
+            return
+        for gf in gameinfo_files:
+            if gf.name == fname:
+                gameinfo_files.remove(gf)
+                return
+        print("Couldn't find in gamedump.php:", fname)
+
     game = gamedb.Game()
-    game.name = str(dom.find(class_='title').string)
+    node = dom.find(class_='title')
+    if node is None:  #phpbb3
+        node = dom.find(class_='topic-title')
+    game.name = str(node.string)
     game.url = url
-    print ("Processing game:", game.name, "  \tsrcid:", srcid)
+    print("Processing game:", game.name, "  \tsrcid:", srcid)
 
     author_box = dom.find(class_='gameauthor')
-    game.author = str(author_box.find(class_='title').string)
-    game.author_link = urljoin(url, util.remove_sid(author_box.a['href']))
+    if author_box:  #phpbb2
+        game.author = str(author_box.find(class_='title').string)
+        author_link = author_box.a
+    else:  # phpbb3
+        author_box = dom.find(class_='author')
+        author_link = author_box.find(class_='username')
+        if author_link is None:
+            author_link = author_box.find(class_='username-coloured')  # Mods and admins
+        game.author = str(author_link.string)
+    game.author_link = urljoin(url, util.remove_sid(author_link['href']))
 
     # Grab description
-    descrip_tag = dom.find(class_='postbody')
-    # Remove <br> tags which are added on every newline
-    # (Note: same games like Willy's also include <p> html, which gets lost
-    #game.description = '\n'.join(line.encode('utf-8').strip() for line in descrip_tag.strings)
-    # Preserve all
-    game.description = rewrite_img_urls(scrape.tag_contents(descrip_tag))
-
-    # Download any images embedded in the description
-    for img_tag in descrip_tag.find_all('img'):
-        # But ignore smilies...
-        if not img_tag['src'].startswith('images/smiles'):
-            stats['inline_screens'] += 1
-            img_url = rewrite_img_urls(urljoin(url, img_tag['src']))
-            stats['downloaded_inline'] += game.add_screenshot_link(db.name, srcid, img_url, is_inline = True)
+    if phpbb == 2:
+        descrip_tag = dom.find(class_='postbody')
+    else:
+        descrip_tag = dom.find(class_='content')
 
     # Downloads
+
+    def parse_phpbb3_attachment(link_tag):
+        "link_tag can be either an <img> or an <a> in the <dt> of an attachment"
+        #print(link_tag.parent.parent)
+        # The <img> is in a <dt> in a <dl> followed by an optional <dd> with
+        # the description, and another <dd> with the filename/size/view count
+        dd_tags = link_tag.find_parent('dl').find_all('dd')
+        if len(dd_tags) == 1:
+            description = None
+        else:
+            description = dd_tags[0].string
+        infotext = str(dd_tags[-1].string)
+        info = infotext.split()
+        # Could get the filename from the gameinfo instead.
+        # infotext for images:
+        #   Viking0004.png (23.56 KiB) Viewed 3860 times
+        # for files:
+        #   (45.93 MiB) Downloaded 219 times
+        if 'postlink' in link_tag['class']:
+            # A download link found in the attachments section, its infotext doesn't duplicate the filename
+            print("download in attachments")
+            fname = str(link_tag.string)
+        else:
+            if 'postimage' in link_tag.parent['class']:
+                match = re.match('(.*) \(.*\) Viewed', infotext)
+                fname = match.group(1)
+            else:
+                fname = infotext.split(info[-5])[0].strip()
+        sizestr = info[-5][1:] + ' ' + info[-4][:-1]
+        download_count = int(info[-2])
+        return fname, description, sizestr, download_count
+
+    def parse_game_download(a_tag):
+        "Parse a download link in the viewgame.php Downloads section, both phpbb 2 and 3"
+        info, descrip_tag, _ = a_tag.next_siblings
+        # info is e.g. phpbb2: "(37.5 KB; downloaded 351 times)" or phpbb3: "(0MB; 22867 downloads)"
+        # the latter being SS custom php so it's formatted differently
+        info = info.split()
+        # The title of the download displayed on the page is the original
+        # file name, need to use gamedump.php to find the mangled name.
+        if phpbb == 2:
+            title = str(a_tag.b.string)  # Display name
+        else:
+            title = str(a_tag.string)
+        download_count = int(info[-2])
+        if phpbb == 2:
+            sizestr = info[0][1:] + ' ' + info[1][:-1]
+        else:
+            sizestr = info[0][1:-1]
+        description = descrip_tag.string and str(descrip_tag.string)
+        return title, description, sizestr, download_count
+
     # Have to match up the downloads on gamedump.php (with the mtimes and
     # actual download links) with the entries on the game page (with the descriptions).
     # The order in which the downloads appear in gamedump.php is mostly sorted by ascending
@@ -88,7 +207,8 @@ def process_game_page(url, gameinfo = None):
     # So the kludge is to first match up the download names, and assume multiple downloads
     # with the same name were uploaded separately, and rely on the order of them being
     # opposite in the two lists.
-    download_tags = dom.find_all('a', href=re.compile('download\.php'))
+    download_php = 'download\.php' if phpbb == 2 else 'download/file\.php'
+    download_tags = dom.find_all('a', href=re.compile(download_php))
     def download_id(a_tag):
         ret = int(util.remove_sid(a_tag['href']).split('id=')[1])
         return ret
@@ -99,13 +219,16 @@ def process_game_page(url, gameinfo = None):
     # an image is listed as a download, so doesn't appear in gameinfo.files
     #assert len(gameinfo.files) == len(download_tags)
     for a_tag in download_tags:
-        info, descrip_tag, _ = a_tag.next_siblings
-        # info is e.g. "(37.5 KB; downloaded 351 times)"
-        info = info.split()
-        download_url = urljoin(url, util.remove_sid(a_tag['href']))
-        # The title of the download displayed on the page is the original
-        # file name, need to use gamedump.php to find the mangled name.
-        title = str(a_tag.b.string)  # Display name
+        #print("<<<A_TAG>>>", a_tag)
+        #print()
+        #print("<<PARENT>>>", a_tag.parent, "\n\n")
+        # Bug on phpbb3 site: .tar.gz downloads are in the attachments rather than
+        # downloads section. Also they have the <a> illegally inside the icon's <img>
+        if a_tag.find_parent('dl'):
+            title, description, sizestr, download_count = parse_phpbb3_attachment(a_tag)
+        else:
+            title, description, sizestr, download_count = parse_game_download(a_tag)
+
         if gameinfo:
             gamefile = gameinfo.file_by_name(title)
             if not gamefile:
@@ -113,61 +236,148 @@ def process_game_page(url, gameinfo = None):
                       "been removed (not in gamedump.php)" % title)
                 zip_fname = "(Removed)"
             else:
-                if gamefile in gameinfo.files:   # it might be in gameinfo.pics instead
-                    gameinfo.files.remove(gamefile)
+                #print("  Found file in gameinfo:", gamefile.name)
                 assert gamefile.name == title
-                zip_fname = gamefile.url.split('/')[-1]
+                if phpbb == 2:
+                    # Note! This is a managled filename like dwarvinity_183.zip,
+                    # which is what it actually downloads as
+                    zip_fname = gamefile.url.split('/')[-1]
+                else:
+                    # Downloads now download with their original filename (while
+                    # the download URL doesn't contain the filename)
+                    zip_fname = gamefile.name
         else:
             zip_fname = title
+            stats['files_not_in_gamedump'] += 1
+        seen_file(title)
+
+        download_url = urljoin(url, util.remove_sid(a_tag['href']))
         download = gamedb.DownloadLink('ss', zip_fname, download_url, title)
-        download.count = int(info[-2])
-        download.sizestr = info[0][1:] + ' ' + info[1][:-1]
-        download.description = descrip_tag.string and str(descrip_tag.string)
+        download.description = description
+        download.sizestr = sizestr
+        download.download_count = download_count
+
+        # TODO: download file naming has changed, match up all the old downloads without redownloading
 
         if zips_db and download.zipkey() in zips_db:
             # Double check we matched the files correcting by checking the sizes match
             expected = util.format_filesize(zips_db[download.zipkey()].size)
-            assert download.sizestr == expected
+            if phpbb == 2:
+                if download.sizestr != expected:
+                    print("WARNING: expected size", expected, "got", download.sizestr)
+            else:
+                # Size string is garbage (but we could copy it from viewtopic.php page instead)
+                download.sizestr = expected
+        print(download.dumpinfo())
         game.downloads.append(download)
 
-    # Grab screenshots
-    for img_tag in dom.find_all('img', class_='attach_img'):
-        caption = img_tag.parent.find_next_sibling('div', class_='attachheader').string
+
+    # Download any images embedded in the description... excluding inline attachments, which are handled
+    # with other image attachments, and then deleted from the description so will no longer be inline.
+    for img_tag in descrip_tag.find_all('img'):
+        # But ignore smilies...
+        src = img_tag['src']
+        if src.startswith('images/smiles') or src.startswith('./images/smilies'):
+            continue
+        if img_tag.find_parent(class_ = 'inline-attachment'):  #phpbb3
+            continue
+
+        stats['inline_screens'] += 1
+        img_url = rewrite_img_urls(util.remove_sid(urljoin(url, img_tag['src'])))
+        stats['downloaded_inline_ok'] += game.add_screenshot_link(db.name, srcid, img_url, is_inline = True)
+
+    # Grab screenshots (and embedded images)
+    screenshot_class = 'attach_img' if phpbb == 2 else 'postimage'
+    for img_tag in dom.find_all('img', class_=screenshot_class):
+        # print("\nscreen:")
+        # print("<<<IMG_TAG>>>", img_tag)
+        # print()
+        # print("<<PARENT>>>", img_tag.parent, "\n\n")
+        if phpbb == 2:
+            caption = img_tag.parent.find_next_sibling('div', class_='attachheader').string
+            fname = img_tag['alt']  # The original name without mangling
+        else:
+            # if img_tag.find_parent(class_=('content', 'signature')):
+            #     # This image is in the description (gets postimage class added), we already handled it
+            #     # or is in the signature (which shouldn't be there), ignore it
+            #     continue
+
+            if img_tag.find_parent(class_='content') and not img_tag.find_parent(class_='inline-attachment'):
+                # Only handle images in the description (they get postimage class added) which are inline
+                # attaches, otherwiser handled above
+                continue
+
+            if img_tag.find_parent(class_='signature'):
+                # This image is in the signature (which shouldn't actually be there), ignore it
+                continue
+
+            #print(img_tag.parent.parent)
+            fname, caption, _, _ = parse_phpbb3_attachment(img_tag)
         # caption is either None or a NavigableString
         if caption:
             caption = str(caption)
-        game.add_screenshot_link(db.name, srcid, urljoin(url, img_tag['src']), caption)
+        img_url = urljoin(url, util.remove_sid(img_tag['src']))
+        game.add_screenshot_link(db.name, srcid, img_url, caption, filename = fname)
+        seen_file(fname)
 
     # Reviews
     game.reviews = []
     for tag in dom.find_all('a', string=('Review', 'Second Review')):
         author = str(tag.find_next_sibling('a').string)
-        game.reviews.append(gamedb.Review(urljoin(url, tag['href']), author, location = 'on Slime Salad'))
+        review = gamedb.Review(urljoin(url, tag['href']), author, game.name, location = 'on Slime Salad')
+        print(review.dumpinfo())
+        game.reviews.append(review)
 
     # Tags
     for tag in dom.find_all(attrs = {'data-tag': True}):
         game.tags.append(str(tag.a.string))
 
+    # Description
+    game.description = clean_description(descrip_tag)
+    #print("description:\n", repr(game.description))
+
     # Double-check that there are no NavigableStrings or undecoded strings
     game = scrape.clean_strings(game)
 
-    #print(game.__dict__)
+    if gameinfo:
+        if len(gameinfo_files):
+            stats['files_not_on_page'] += len(gameinfo_files)
+            print("FILES NOT ON PAGE:")
+            for gf in gameinfo_files:
+                print(gf.serialize())
+
+    print(game.__dict__)
     db.games[srcid] = game
 
-def process_index_page(url, limit = 9999):
+def process_gamedump(phpbb2 = False, limit = 9999):
     """
     Generate the db and link_db databases (both global variables)
     """
-    print("Fetching/parsing page...")
-    page = scrape.get_url(url, cache = CACHE_INDEX).decode('windows-1252')
+    url = OLD_GAMEDUMP_URL if phpbb2 else GAMEDUMP_URL
+    print("Fetching/parsing", url)
+    page = scrape.get_url(url, cache = CACHE_INDEX).decode('utf8') #('windows-1252')
 
     file = StringIO(page)
     for chunk in ChunkReader(file).each():
         game = GameInfo(chunk)
-        process_game_page(game.url, game)
+        pageurl = game.url.replace('http://', 'https://')
+        if phpbb2:
+            pageurl = pageurl.replace('/forum', '/phpbb2')
+        process_game_page(pageurl, game)
         limit -= 1
         if limit <= 0:
             break
+
+def process_one_game(url, limit = 9999):
+    """
+    Calls process_game_page() with gamedump.php entry
+    """
+    print("Fetching/parsing gamedump.php...")
+    page = scrape.get_url(GAMEDUMP_URL, cache = CACHE_INDEX).decode('utf8') #('windows-1252')
+
+    chunks = ChunkReader(StringIO(page))
+    process_game_page(url.replace('http://', 'https://'), chunks.find_game(url))
+
 
 def list_downloads_by_mod_date(url, limit = 9999):
     """
@@ -221,8 +431,15 @@ if __name__ == '__main__':
     db = gamedb.GameList('ss')
     #link_db = db_layer.load('ss_links')
     link_db = {'p2t':{}, 't2p':{}}  # post -> topic and topic -> post mappings
-    process_index_page('http://www.slimesalad.com/forum/gamedump.php')
-    #process_game_page('http://www.slimesalad.com/forum/viewgame.php?t=5419')
+    process_gamedump(phpbb2 = True)
+    #process_one_game('http://www.slimesalad.com/forum/viewgame.php?t=7976') #  Double-UTF8 mangled filename
+    #process_one_game('http://www.slimesalad.com/forum/viewgame.php?t=38')  # Double-UTF8 mangled filenames
+    #process_one_game('http://www.slimesalad.com/forum/viewgame.php?t=8294')
+    #process_one_game('http://www.slimesalad.com/forum/viewgame.php?t=6041')  # Two downloads with same filename
+    #process_one_game('http://www.slimesalad.com/forum/viewgame.php?t=354')  # Had a (dead) embedded image link
+    #process_one_game('http://www.slimesalad.com/forum/viewgame.php?t=8239')  # Inline attachments that are "no longer available"
+    #process_one_game('http://www.slimesalad.com/forum/viewgame.php?t=7045')
+    #process_one_game('http://www.slimesalad.com/forum/viewgame.php?t=360')
     db.save()
     db_layer.save('ss_links', link_db)
     print(stats)

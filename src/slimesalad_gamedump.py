@@ -117,6 +117,14 @@ class ChunkReader(object):
             yield chunk
             chunk = self.get_next_chunk()
 
+    def find_game(self, page_url):
+        for chunk in self.each():
+            game = GameInfo(chunk)
+            if game.url == page_url.replace('https://', 'http://'):
+                return game
+        raise KeyError("No known game with URL " + page_url)
+
+
 #######################################################################
 
 class LocalGameCache(object):

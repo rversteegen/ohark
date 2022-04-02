@@ -471,11 +471,11 @@ def get_game_download_summary(game, zips_db):
         return "Yes", has_scripts
         return "No", "No"
 
-    has_download = 0
-    has_scripts = 0
+    has_download = "No"
+    has_scripts = "No"
     if game.website:
-        has_download = 1
-        has_scripts = 1
+        has_download = "?"
+        has_scripts = "?"
     for download in game.downloads:
         key = download.zipkey()
         if key in zips_db:
@@ -486,10 +486,11 @@ def get_game_download_summary(game, zips_db):
                 has_scripts = "Yes"
         else:
             # A download link, but we don't recognise it, eg a .rar file
-            has_download = max(has_download, 1)
-            has_scripts = max(has_scripts, 1)
-    no_maybe_yes = "No", "?", "Yes"
-    return no_maybe_yes[has_download], no_maybe_yes[has_scripts]
+            if has_download == "No":
+                has_download = "?"
+            if has_scripts == "No":
+                has_scripts = "?"
+    return has_download, has_scripts
 
 def render_game(listname, gameid, game):
     """

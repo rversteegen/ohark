@@ -11,8 +11,8 @@ from wsgiref.simple_server import make_server
 
 import website
 
-httpd = make_server('', 8007, website.application)
-print("Serving HTTP on port 8007...")
+httpd = make_server('', 8080, website.application)
+print("Serving HTTP on port 8080...")
 
 # Respond to requests until process is killed
 httpd.serve_forever()

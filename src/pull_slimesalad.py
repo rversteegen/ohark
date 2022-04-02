@@ -6,6 +6,7 @@ import urlimp
 from urlimp import urljoin
 from io import StringIO
 from collections import defaultdict
+import bs4
 
 import scrape
 import db_layer
@@ -22,6 +23,10 @@ OLD_GAMEDUMP_URL = 'https://www.slimesalad.com/phpbb2/gamedump.php'
 # should intelligently figure out which caches to drop)
 CACHE_INDEX = True #False
 CACHE_GAMES = True
+
+def tostr(strnode: bs4.NavigableString):
+    ret = str(strnode.string)
+    return util.fix_double_utf8(ret)
 
 def rewrite_img_urls(url_or_html):
     "Special cases"
@@ -121,20 +126,20 @@ def process_game_page(url, gameinfo = None):
     node = dom.find(class_='title')
     if node is None:  #phpbb3
         node = dom.find(class_='topic-title')
-    game.name = str(node.string)
+    game.name = tostr(node)
     game.url = url
     print("Processing game:", game.name, "  \tsrcid:", srcid)
 
     author_box = dom.find(class_='gameauthor')
     if author_box:  #phpbb2
-        game.author = str(author_box.find(class_='title').string)
+        game.author = tostr(author_box.find(class_='title'))
         author_link = author_box.a
     else:  # phpbb3
         author_box = dom.find(class_='author')
         author_link = author_box.find(class_='username')
         if author_link is None:
             author_link = author_box.find(class_='username-coloured')  # Mods and admins
-        game.author = str(author_link.string)
+        game.author = tostr(author_link)
     game.author_link = urljoin(url, util.remove_sid(author_link['href']))
 
     # Grab description
@@ -154,8 +159,8 @@ def process_game_page(url, gameinfo = None):
         if len(dd_tags) == 1:
             description = None
         else:
-            description = dd_tags[0].string
-        infotext = str(dd_tags[-1].string)
+            description = tostr(dd_tags[0])
+        infotext = tostr(dd_tags[-1])
         info = infotext.split()
         # Could get the filename from the gameinfo instead.
         # infotext for images:
@@ -165,7 +170,7 @@ def process_game_page(url, gameinfo = None):
         if 'postlink' in link_tag['class']:
             # A download link found in the attachments section, its infotext doesn't duplicate the filename
             print("download in attachments")
-            fname = str(link_tag.string)
+            fname = tostr(link_tag)
         else:
             if 'postimage' in link_tag.parent['class']:
                 match = re.match('(.*) \(.*\) Viewed', infotext)
@@ -185,15 +190,15 @@ def process_game_page(url, gameinfo = None):
         # The title of the download displayed on the page is the original
         # file name, need to use gamedump.php to find the mangled name.
         if phpbb == 2:
-            title = str(a_tag.b.string)  # Display name
+            title = tostr(a_tag.b)  # Display name
         else:
-            title = str(a_tag.string)
+            title = tostr(a_tag)
         download_count = int(info[-2])
         if phpbb == 2:
             sizestr = info[0][1:] + ' ' + info[1][:-1]
         else:
             sizestr = info[0][1:-1]
-        description = descrip_tag.string and str(descrip_tag.string)
+        description = descrip_tag.string and tostr(descrip_tag)
         return title, description, sizestr, download_count
 
     # Have to match up the downloads on gamedump.php (with the mtimes and
@@ -315,7 +320,7 @@ def process_game_page(url, gameinfo = None):
             fname, caption, _, _ = parse_phpbb3_attachment(img_tag)
         # caption is either None or a NavigableString
         if caption:
-            caption = str(caption)
+            caption = tostr(caption)
         img_url = urljoin(url, util.remove_sid(img_tag['src']))
         game.add_screenshot_link(db.name, srcid, img_url, caption, filename = fname)
         seen_file(fname)
@@ -323,14 +328,14 @@ def process_game_page(url, gameinfo = None):
     # Reviews
     game.reviews = []
     for tag in dom.find_all('a', string=('Review', 'Second Review')):
-        author = str(tag.find_next_sibling('a').string)
+        author = tostr(tag.find_next_sibling('a'))
         review = gamedb.Review(urljoin(url, tag['href']), author, game.name, location = 'on Slime Salad')
         print(review.dumpinfo())
         game.reviews.append(review)
 
     # Tags
     for tag in dom.find_all(attrs = {'data-tag': True}):
-        game.tags.append(str(tag.a.string))
+        game.tags.append(tostr(tag.a))
 
     # Description
     game.description = clean_description(descrip_tag)

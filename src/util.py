@@ -127,6 +127,16 @@ def shell_output(*args, **kwargs):
     """Runs a program on the shell and returns stdout as a string"""
     return program_output(*args, shell=True, **kwargs)
 
+def fix_double_utf8(text: str):
+    try:
+        b = text.encode('latin-1')
+        ret = b.decode('utf8')
+        if text != ret:
+            print("fix_double_utf8: Fixed %s to %s" % (text, ret))
+        return ret
+    except UnicodeError:
+        return text
+
 def fix_escapes(text):
     """Decoded instances of  \\ \' and \" escapes in a string, and also double encoding like \\\\'
     (there are a couple games on Op:OHR which do this!)"""

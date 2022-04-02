@@ -46,12 +46,13 @@ def clean_description(descrip_tag):
         # Ugh clean this up
         attach.replace_with()  # Delete
 
+    for tag in descrip_tag.find_all(class_='codebox'):
+        # Remove "Code" and "Select all" button
+        tag.p.replace_with()
+
     for tag in descrip_tag.find_all(onclick=True):
         #print("ONCLICK TAG", tag)
-        if str(tag.string) == "Select all": # code block button, remove it
-            tag.replace_with()
-        else:
-            assert 'ss-spoiler' in tag.get('class')
+        assert 'ss-spoiler' in tag.get('class')
 
     for tag in descrip_tag.find_all(class_=True):
         del tag['class']
@@ -300,6 +301,9 @@ def process_game_page(url, gameinfo = None):
         # print("<<PARENT>>>", img_tag.parent, "\n\n")
         if phpbb == 2:
             caption = img_tag.parent.find_next_sibling('div', class_='attachheader').string
+            # caption is either None or a NavigableString
+            if caption:
+                caption = tostr(caption)
             fname = img_tag['alt']  # The original name without mangling
         else:
             # if img_tag.find_parent(class_=('content', 'signature')):
@@ -318,9 +322,6 @@ def process_game_page(url, gameinfo = None):
 
             #print(img_tag.parent.parent)
             fname, caption, _, _ = parse_phpbb3_attachment(img_tag)
-        # caption is either None or a NavigableString
-        if caption:
-            caption = tostr(caption)
         img_url = urljoin(url, util.remove_sid(img_tag['src']))
         game.add_screenshot_link(db.name, srcid, img_url, caption, filename = fname)
         seen_file(fname)

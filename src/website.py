@@ -492,6 +492,15 @@ def get_game_download_summary(game, zips_db):
                 has_scripts = "?"
     return has_download, has_scripts
 
+def render_game_description(game):
+    """Perform fixups on a game's description text, retuning html"""
+    text = game.description
+    # URLs for images inline in the description are replaced at page render time
+    for screen in game.screenshots:
+        if screen.is_inline:
+            text = text.replace(screen.url, screen.get_url(prefer_external = False))
+    return text
+
 def render_game(listname, gameid, game):
     """
     Generates a gamelists/<listname>/<gameid>/ page for a single game entry
@@ -512,7 +521,7 @@ def render_game(listname, gameid, game):
     #     ret += add_row("Origin/ID", gameid)
     if game.website:
         ret += add_row("Website", util.link(game.website, game.website))
-    ret += add_row("Description", game.description)
+    ret += add_row("Description", render_game_description(game))
     if game.archives:
         ret += add_row("Appears in", get_game_archives_info(game))
     ret += add_row("Tags", ", ".join(util.link("games?tag=" + tag, tag) for tag in game.tags))

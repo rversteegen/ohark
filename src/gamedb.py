@@ -38,15 +38,21 @@ class Screenshot:
         self.description = description
         self.is_inline = is_inline     # True if the screenshot is already inlined in the game description.
 
-    def img_tag(self, title = ""):
-        if self.url:
+    def get_url(self, prefer_external = False):
+        if prefer_external and self.url:
             # Prefer external link, if one exists
             url = self.url
         else:
             url = paths.local_path_to_url(self.local_path)
+            if url is None:
+                url = self.url
+        return url
+
+    def img_tag(self, title = "", prefer_external = False):
         if title and self.description:
             title += "\n"
         title += self.description or ""
+        url = self.get_url(prefer_external)
         if url:
             return '<img src="%s" alt="Screen" title="%s" />' % (url, title)
         else:

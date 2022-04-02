@@ -97,7 +97,7 @@ def load(source_name):
             if not db:
                 return None
             _cache[source_name] = db
-            _context.quickcache[source_name] = db
+            _context.quickcache[source_name] = db.db
         return _cache[source_name].db
 
 def save(source_name, db):

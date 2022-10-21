@@ -15,7 +15,7 @@ import sys
 #STATIC_ROOT = '/home/teeemcee/ohr/ohr_archive/web/'
 STATIC_ROOT = '../web/' #os.path.abspath(os.curdir) + '../web/'
 # Part of <base> tag, relative URLs according to this
-URL_ROOTPATH = '/ohr-archive/'  #'/ohr/ark/'
+URL_ROOTPATH = '/ark/'
 
 #SRC_DIR = '../src/'
 

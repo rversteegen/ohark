@@ -1,3 +1,5 @@
+- Use SQL + mood.msgpack for serialization. mood.msgpack extends msgpack to make it a full
+  pickle substitute for Python objects supporting __reduce__ (pickle API)
 
 - Mark all external links with icons
 

@@ -12,7 +12,6 @@ import re
 import os.path
 import posixpath
 import base64
-import numpy
 
 from urlimp import urlparse, urlencode, urlopen, urlretrieve, HTTPError
 import util
@@ -226,7 +225,8 @@ def clean_strings(obj):
         #         print('Non-ASCII string "%s"' % obj[:60])
         #         return obj.decode('latin-1')
         return obj  # Avoid infinite loop iterating a string
-    elif isinstance(obj, numpy.ndarray):
+    #elif isinstance(obj, numpy.ndarray):
+    elif hasattr(obj, '__array__'):
         pass
     elif hasattr(obj, '__setitem__'):
         for k, v in enumerate(obj):

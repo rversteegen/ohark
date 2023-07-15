@@ -7,8 +7,6 @@ Should probably use a real DB, but for now they are just saved as .pickle files.
 
 
 import os
-import ctypes
-import numpy
 import pickle
 
 import util
@@ -16,9 +14,6 @@ import util
 
 DB_DIR = os.path.join(os.path.dirname(__file__), 'databases')
 
-def bindata(data, dtype = numpy.uint8):
-    "Turn a bytes into a serialisation format"
-    return numpy.frombuffer(data, dtype)
 
 
 ###############################################################################

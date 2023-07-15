@@ -23,6 +23,10 @@ import gamedb
 import inspect_rpg
 
 
+def bindata(data, dtype = np.uint8):
+    "Turn a bytes into a serialisation format"
+    return np.frombuffer(data, dtype)
+
 def process_sources(db_name, sources):
     """
     Create and write a GameList.

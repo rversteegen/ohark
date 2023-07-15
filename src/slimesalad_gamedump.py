@@ -84,12 +84,12 @@ class GameFile(object):
 class GameDumpReader(object):
 
     def __init__(self, url, local):
-        #print "Fetching ", url
+        #print("Fetching ", url)
         f = urlimp.urlopen(url)
         cr = ChunkReader(f)
         for chunk in cr.each():
-           game = GameInfo(chunk)
-           GameMirrorer(game, local)
+            game = GameInfo(chunk)
+            GameMirrorer(game, local)
 
 #######################################################################
 
@@ -114,7 +114,9 @@ class ChunkReader(object):
     def each(self):
         chunk = self.get_next_chunk()
         while chunk:
-            yield chunk
+            # Work around this invalid chunk due to a deleted game
+            if 'http://www.slimesalad.com/forum/viewgame.php?t=0' not in chunk:
+                yield chunk
             chunk = self.get_next_chunk()
 
     def find_game(self, page_url):
@@ -190,7 +192,7 @@ class LocalGameCache(object):
 
 def download(url, local_file):
     folder = os.path.dirname(local_file)
-    print("downloading %s %s" % (os.path.basename(local_file), url))
+    print("downloading %s from %s" % (os.path.basename(local_file), url))
     if not os.path.isdir(folder):
         os.mkdir(folder)
     input = urlimp.urlopen(url)

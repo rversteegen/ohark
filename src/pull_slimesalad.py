@@ -363,9 +363,16 @@ def process_gamedump(phpbb2 = False, limit = 9999):
     print("Fetching/parsing", url)
     page = scrape.get_url(url, cache = CACHE_INDEX).decode('utf8') #('windows-1252')
 
+    seen_names = set()
+    seen_urls = set()
     file = StringIO(page)
     for chunk in ChunkReader(file).each():
         game = GameInfo(chunk)
+        assert game.name not in seen_names
+        assert game.url not in seen_urls
+        seen_names.add(game.name)
+        seen_urls.add(game.url)
+
         pageurl = game.url.replace('http://', 'https://')
         if phpbb2:
             pageurl = pageurl.replace('/forum', '/phpbb2')

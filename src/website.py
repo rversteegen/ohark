@@ -150,6 +150,16 @@ def gamelist_filter_game(game):
                 break
         else:
             return False
+    if 'download' in reqinfo.query or 'scripts' in reqinfo.query:
+        # Handle download/scripts=yes/no/?
+        zips_db = db_layer.load('zips')
+        vals = {}
+        vals['download'], vals['scripts'] = get_game_download_summary(game, zips_db)
+        for key in ('download', 'scripts'):
+            if key in reqinfo.query:
+                # Take first query only
+                if vals[key].lower() != reqinfo.query[key][0].lower():
+                    return False
     if 'author' in reqinfo.query:
         for term in reqinfo.query['author']:
             if term.lower() in game.author.lower():
@@ -477,6 +487,7 @@ def get_game_download_summary(game, zips_db):
         has_download = "?"
         has_scripts = "?"
     for download in game.downloads:
+        has_download = "?"
         key = download.zipkey()
         if key in zips_db:
             if hasattr(zips_db[key], 'rpgs') and zips_db[key].rpgs:

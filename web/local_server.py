@@ -5,13 +5,13 @@
 
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.dirname(__file__) + '/../src'))
+sys.path.append(os.path.abspath(os.path.dirname(__file__) + '/..'))
 
 from wsgiref.simple_server import make_server
 
-import website
+import ohrk.website
 
-httpd = make_server('', 8080, website.application)
+httpd = make_server('', 8080, ohrk.website.application)
 print("Serving HTTP on port 8080...")
 
 # Respond to requests until process is killed

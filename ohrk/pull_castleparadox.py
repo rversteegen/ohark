@@ -5,15 +5,16 @@ Pull game listings from the Castle Paradox game list
 Usage:  ./pull_castleparadox.py [--backup]
 """
 
+import re
 import sys
 import time
-import re
 from bs4 import BeautifulSoup, NavigableString
 
-import scrape
-from urlimp import urljoin
-import gamedb
-import util
+if __name__ == '__main__':
+    import ohrkpaths  # Setup sys.path
+
+from ohrk import gamedb, scrape, util
+from ohrk.urlimp import urljoin
 
 
 # Unfortunately some text is utf-8 and some is latin-1.

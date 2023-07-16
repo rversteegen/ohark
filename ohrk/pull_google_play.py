@@ -5,10 +5,11 @@ Pull game data from Google Play and add to the DB
 
 import time
 
-import scrape
-from urlimp import urljoin
-import gamedb
-import util
+if __name__ == '__main__':
+    import ohrkpaths  # Setup sys.path
+
+from ohrk import gamedb, scrape, util
+from ohrk.urlimp import urljoin
 
 # Whether to cache index pages and individual game pages
 CACHE_INDEX = False

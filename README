@@ -1,12 +1,15 @@
-OHR Archive
-===========
+OHArk (aka ohrk)
+================
 
 A grand unified cross-referenced archive of OHRRPGCE games and reviews.
-Website, crawler, aggregator, archive, gamedata inspector, browser, web-based game player.
+Website, crawler, aggregator, archive, gamedata inspector, browser, web-based
+game player, Python library.
 Work in progress. Early days still.
-Data from all OHR gamelists and review website will eventually be imported.
+The goal is to import everything from all OHR gamelists and review websites;
+most gamelists already are.
 
-Written in pure Python. Works with at least Python 2.6, 2.7, 3.5, 3.6.
+Written in pure Python with WSGI. Tested with Python 3.9; 3.5 previously worked.
+(Originally written for 2.6.)
 
 To download the database files:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -14,7 +17,7 @@ To download the database files:
 
 Download the database files containing the gamelists from
 http://tmc.castleparadox.com/ohr/archive/databases/
-and place them in the src/databases/ directory.
+and place them in the ohrk/databases/ directory.
 
 To crawl the gamelists:
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -25,30 +28,30 @@ Modules to install:
  bs4   (BeautifulSoup 4)
  lxml  Optional - for faster html parsing
 
-> cd src
+> cd ohrk
 > ./pull_castleparadox.py
 > ./pull_slimesalad.py
 > ./pull_hamsterspeak.py
 > ./pull_google_play.py
-These scripts cache all files they download to src/download_cache/
+These scripts cache all files they download to ohrk/download_cache/
 (about 144MB in total currently) and will not ever download them
 again, so re-running will be much faster.
-They also copy the screenshots to src/data/. zip files are not yet downloaded.
+They also copy the screenshots to ohrk/data/. zip files are not yet downloaded.
 You can also process the motherhamster.org mirror of CP with:
 > ./pull_castleparadox.py --backup
 
 Op:OHR is different, it's imported using a backup of the website directory tree
 instead of scrapping the website. The download is 158MB.
-> wget http://tmc.castleparadox.com/ohr/archive/operation_ohr_backup.tar.xz
+> wget https://tmc.castleparadox.com/ohr/archive/operation_ohr_backup.tar.xz
 > tar xf operation_ohr_backup.tar.xz
-> cd src
-> ./pull_opohr_from_backup.sh
+> cd ohrk
+> ./pull_opohr_from_backup.py
 
 To process .zip/.rpg files:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 This isn't automated yet; you need to provide your own archive of .zip,
-.rpgdir or .rpg files. Then feed them on the commandline to src/process_rpgs.py.
-See src/process_cp_archive.sh for an example.
+.rpgdir or .rpg files. Then feed them on the commandline to ohrk/process_rpgs.py.
+See ohrk/process_archives.sh for an example.
 
 To host the website:
 ~~~~~~~~~~~~~~~~~~~~
@@ -61,4 +64,4 @@ Python webapps. Also, see web/.htaccess to run using Apache's mod_python.
 Also web/flupserve.py is a FastCGI interface for the website, but doesn't
 seem to work with Apache 2.2.
 
-src/paths.py contains configuration variables.
+ohrk/ohrkpaths.py contains configuration variables.

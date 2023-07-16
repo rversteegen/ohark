@@ -9,10 +9,10 @@ import time
 import re
 from bs4 import BeautifulSoup, NavigableString
 
-import scrape
-import urlimp
-import gamedb
-import util
+if __name__ == '__main__':
+    import ohrkpaths  # Setup sys.path
+
+from ohrk import gamedb, scrape, urlimp, util
 
 
 encoding = 'latin-1'

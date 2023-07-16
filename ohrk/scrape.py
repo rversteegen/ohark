@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 """
 Provides get_page for downloading a page from the web or grabbing it from
 a local cache, and some utility routines useful for crawling or scraping webpages.
@@ -13,10 +11,8 @@ import os.path
 import posixpath
 import base64
 
-from urlimp import urlparse, urlencode, urlopen, urlretrieve, HTTPError
-import util
-import db_layer
-import gamedb
+from ohrk import db_layer, gamedb, util
+from ohrk.urlimp import urlparse, urlencode, urlopen, urlretrieve, HTTPError
 
 
 try:

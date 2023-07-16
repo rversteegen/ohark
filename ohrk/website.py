@@ -11,17 +11,12 @@ import sys
 import time
 import random
 from collections import defaultdict
-from rpg_const import *
-
-from paths import *
 #import tabulate
 
-import urlimp
-import util
-import db_layer
-import gamedb
-import inspect_rpg
-import pull_slimesalad
+from ohrk.rpg_const import *
+from ohrk.ohrkpaths import *
+from ohrk import gamedb, db_layer, inspect_rpg, urlimp, util
+from ohrk import pull_slimesalad
 
 
 print(os.path.abspath('.'))

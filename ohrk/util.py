@@ -6,7 +6,7 @@ import ctypes
 import hashlib
 import html
 
-import urlimp
+from ohrk import urlimp
 
 ################################################################################
 ### Util

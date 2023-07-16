@@ -3,13 +3,15 @@
 Pull game reviews, previews, etc, from HamsterSpeak.
 """
 
-from bs4 import BeautifulSoup, NavigableString
 import re
+from bs4 import BeautifulSoup, NavigableString
 
-import scrape
-from urlimp import urljoin
-import gamedb
-import util
+if __name__ == '__main__':
+    import ohrkpaths  # Setup sys.path
+
+from ohrk import scrape, gamedb, util
+from ohrk.urlimp import urljoin
+
 
 encoding = 'latin-1'
 

@@ -3,8 +3,8 @@ Routines for reading  various data from an .rpg file/.rpgdir, extending
 what rpgbatch provides.
 """
 
-from rpg_const import *
 import numpy as np
+from ohrk.rpg_const import *
 
 try:
     from nohrio.ohrrpgce import *

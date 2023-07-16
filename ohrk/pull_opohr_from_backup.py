@@ -11,10 +11,11 @@ import os
 from collections import defaultdict
 import shutil
 
-import scrape
-import urlimp
-import gamedb
-import util
+if __name__ == '__main__':
+    import ohrkpaths  # Setup sys.path
+
+from ohrk import gamedb, scrape, urlimp, util
+
 
 # Point this to where you've extracted the above archive
 OPOHR_PATH = '../operationohr/'

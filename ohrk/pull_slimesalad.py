@@ -3,17 +3,16 @@
 import re
 import time
 import os
-import urlimp
-from urlimp import urljoin
 from io import StringIO
 from collections import defaultdict
 import bs4
 
-import scrape
-import db_layer
-import gamedb
-import util
-from slimesalad_gamedump import ChunkReader, GameInfo
+if __name__ == '__main__':
+    import ohrkpaths  # Setup sys.path
+
+from ohrk import db_layer, gamedb, scrape, urlimp, util
+from ohrk.urlimp import urljoin
+from ohrk.slimesalad_gamedump import ChunkReader, GameInfo
 
 
 GAMEDUMP_URL = 'https://www.slimesalad.com/forum/gamedump.php'

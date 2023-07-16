@@ -6,16 +6,18 @@ and specifically the games listing provided by Pepsi Ranger.
 """
 
 
-import time
 import datetime
 import calendar
 import re
+import time
 from bs4 import BeautifulSoup, NavigableString
 
-import scrape
-from urlimp import urljoin
-import gamedb
-import util
+if __name__ == '__main__':
+    import ohrkpaths  # Setup sys.path
+
+from ohrk import gamedb, scrape, util
+from ohrk.urlimp import urljoin
+
 
 # Unfortunately some text is utf-8 and some is latin-1.
 # But if each game entry is processed and auto-detected separately, that should be ok.

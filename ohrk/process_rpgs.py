@@ -12,15 +12,13 @@ import sys
 import time
 import random
 import numpy as np
-
-import paths
 import nohrio.ohrrpgce
 from rpgbatch.rpgbatch import RPGIterator, RPGInfo, ArchiveInfo
-import util
-import scrape
-import db_layer
-import gamedb
-import inspect_rpg
+
+if __name__ == '__main__':
+    import ohrkpaths  # Setup sys.path
+
+from ohrk import gamedb, db_layer, inspect_rpg, scrape, util
 
 
 def bindata(data, dtype = np.uint8):

@@ -5,10 +5,7 @@ The Game and related classes.
 import os
 import shutil
 
-import paths
-import util
-import scrape
-import db_layer
+from ohrk import db_layer, ohrkpaths, scrape, util
 
 
 SOURCES = {
@@ -43,7 +40,7 @@ class Screenshot:
             # Prefer external link, if one exists
             url = self.url
         else:
-            url = paths.local_path_to_url(self.local_path)
+            url = ohrkpaths.local_path_to_url(self.local_path)
             if url is None:
                 url = self.url
         return url

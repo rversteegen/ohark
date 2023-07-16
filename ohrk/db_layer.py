@@ -9,7 +9,7 @@ Should probably use a real DB, but for now they are just saved as .pickle files.
 import os
 import pickle
 
-import util
+from ohrk import util
 
 
 DB_DIR = os.path.join(os.path.dirname(__file__), 'databases')

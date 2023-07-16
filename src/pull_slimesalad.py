@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import re
+import time
 import os
 import urlimp
 from urlimp import urljoin
@@ -342,6 +343,15 @@ def process_game_page(url, gameinfo = None):
     game.description = clean_description(descrip_tag)
     #print("description:\n", repr(game.description))
 
+    # Edit time
+    if phpbb == 3:
+        notice = dom.find(class_='notice')
+        if notice:
+            # Use notice.txt to ignore the user profile link
+            match = re.search('on (.*), edited', notice.text)
+            # E.g. Thu Jul 12, 2018 12:11 pm
+            game.mtime = time.mktime(time.strptime(match.group(1), "%a %b %d, %Y %I:%M %p"))
+
     # Double-check that there are no NavigableStrings or undecoded strings
     game = scrape.clean_strings(game)
 
@@ -453,6 +463,7 @@ if __name__ == '__main__':
     #process_one_game('http://www.slimesalad.com/forum/viewgame.php?t=8239')  # Inline attachments that are "no longer available"
     #process_one_game('http://www.slimesalad.com/forum/viewgame.php?t=7045')
     #process_one_game('http://www.slimesalad.com/forum/viewgame.php?t=360')
+    process_one_game('http://www.slimesalad.com/forum/viewgame.php?t=6677')  # Code block
     db.save()
     db_layer.save('ss_links', link_db)
     print(stats)

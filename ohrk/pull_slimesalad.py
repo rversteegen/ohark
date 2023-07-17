@@ -18,11 +18,17 @@ from ohrk.slimesalad_gamedump import ChunkReader, GameInfo
 GAMEDUMP_URL = 'https://www.slimesalad.com/forum/gamedump.php'
 OLD_GAMEDUMP_URL = 'https://www.slimesalad.com/phpbb2/gamedump.php'
 
-# Whether to cache the main index and individual game pages
+
+db = None
+#link_db = db_layer.load('ss_links')
+link_db = {'p2t':{}, 't2p':{}}  # post -> topic and topic -> post mappings
+zips_db = None
+
+
+# Whether to cache gamedump.php
 # (Note: caching game pages may cause problems with listed downloads. Ideally
 # should intelligently figure out which caches to drop)
 CACHE_INDEX = True #False
-CACHE_GAMES = True
 
 def tostr(strnode: bs4.NavigableString):
     ret = str(strnode.string)
@@ -71,7 +77,7 @@ stats = {'inline_screens': 0, 'downloaded_inline_ok': 0, 'files_processed': 0, '
 
 seen_tags = defaultdict(int)
 
-def process_game_page(url, gameinfo = None):
+def process_game_page(url, gameinfo: GameInfo = None, cache = True, download_screens = True):
     global zips_db
 
     # Every game on SS has *four* valid links, for example:
@@ -177,7 +183,7 @@ def process_game_page(url, gameinfo = None):
         # the description, and another <dd> with the filename/size/view count
         dd_tags = link_tag.find_parent('dl').find_all('dd')
         if len(dd_tags) == 1:
-            description = None
+            description = ""
         else:
             description = tostr(dd_tags[0])
         infotext = tostr(dd_tags[-1])
@@ -309,7 +315,10 @@ def process_game_page(url, gameinfo = None):
 
         stats['inline_screens'] += 1
         img_url = rewrite_img_urls(util.remove_sid(urljoin(url, img_tag['src'])))
-        stats['downloaded_inline_ok'] += game.add_screenshot_link(db.name, srcid, img_url, is_inline = True)
+        if download_screens:
+            stats['downloaded_inline_ok'] += game.add_screenshot_link(db.name, srcid, img_url, is_inline = True)
+        else:
+            game.add_screenshot_no_download(img_url, is_inline = True)
 
     # Grab screenshots (and embedded images)
     screenshot_class = 'attach_img' if phpbb == 2 else 'postimage'
@@ -342,7 +351,10 @@ def process_game_page(url, gameinfo = None):
             #print(img_tag.parent.parent)
             fname, caption, _, _ = parse_phpbb3_attachment(img_tag)
         img_url = urljoin(url, util.remove_sid(img_tag['src']))
-        game.add_screenshot_link(db.name, srcid, img_url, caption, filename = fname)
+        if download_screens:
+            game.add_screenshot_link(db.name, srcid, img_url, caption, filename = fname)
+        else:
+            game.add_screenshot_no_download(img_url, caption)
         seen_file(fname)
 
     # Reviews
@@ -380,8 +392,9 @@ def process_game_page(url, gameinfo = None):
             for gf in gameinfo_files:
                 print(gf.serialize())
 
-    print(game.__dict__)
-    db.games[srcid] = game
+    if db:
+        db.games[srcid] = game
+    return game
 
 def process_gamedump(phpbb2 = False, limit = 9999):
     """
@@ -404,7 +417,9 @@ def process_gamedump(phpbb2 = False, limit = 9999):
         pageurl = game.url.replace('http://', 'https://')
         if phpbb2:
             pageurl = pageurl.replace('/forum', '/phpbb2')
-        process_game_page(pageurl, game)
+        game = process_game_page(pageurl, gameinfo)
+        print(game.__dict__)
+
         limit -= 1
         if limit <= 0:
             break
@@ -466,13 +481,12 @@ def srcid_for_SS_link(url):
 if __name__ == '__main__':
     #list_downloads_by_mod_date('http://www.slimesalad.com/forum/gamedump.php')
 
+    link_db = db_layer.load('ss_links')
     # This is optional (OK to fail loading); used for double checking downloads match
     zips_db = db_layer.load('zips')
 
     db = gamedb.GameList('ss')
-    #link_db = db_layer.load('ss_links')
-    link_db = {'p2t':{}, 't2p':{}}  # post -> topic and topic -> post mappings
-    process_gamedump(phpbb2 = True)
+    process_gamedump(phpbb2 = False)
     #process_one_game('http://www.slimesalad.com/forum/viewgame.php?t=7976') #  Double-UTF8 mangled filename
     #process_one_game('http://www.slimesalad.com/forum/viewgame.php?t=38')  # Double-UTF8 mangled filenames
     #process_one_game('http://www.slimesalad.com/forum/viewgame.php?t=8294')

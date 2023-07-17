@@ -168,6 +168,13 @@ class Game:
         util.mkdir(datadir)
         return datadir
 
+    def add_screenshot_no_download(self, url, description = "", is_inline = False):
+        "Like add_screenshot_link() but doesn't download."
+        assert not url.startswith('data:')
+        screenshot = Screenshot(url, '', description, is_inline)
+        print(screenshot.dumpinfo())
+        self.screenshots.append(screenshot)
+
     def add_screenshot_link(self, dbname, srcid, url, description = "", is_inline = False, filename = None):
         """
         Add a screenshot to this game, and download a local copy too (use filename for that)

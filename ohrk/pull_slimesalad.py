@@ -74,18 +74,7 @@ seen_tags = defaultdict(int)
 def process_game_page(url, gameinfo = None):
     global zips_db
 
-    topicnum = int(url.split('?t=')[-1])
-    if topicnum == 0:
-        # Deleted game
-        # When a game is deleted sometimes there's a phantom gamedump.php entry with garbage data.
-        # And the old URL may either not exist, or go to a Deleted Game page with original author
-        # and review link remnants
-        print("Skipping deleted game")
-        return
-
-    dom = scrape.get_page(url)
-
-    #Every game on SS has *four* valid links, for example:
+    # Every game on SS has *four* valid links, for example:
     # http://www.slimesalad.com/forum/viewgame.php?t=1021
     # http://www.slimesalad.com/forum/viewtopic.php?t=1021
     # http://www.slimesalad.com/forum/viewtopic.php?p=15109
@@ -93,10 +82,36 @@ def process_game_page(url, gameinfo = None):
     # (?t= is topic number ?p= is post number)
     # While viewtopic.php can be used instead of viewgame.php, it's missing
     # the tags. Use topic number as srcid.
-    assert 'viewgame.php?t=' in url and len(url.split('=')) == 2, "Expected game url to be viewgame.php?t=..."
-    srcid = url.split('=')[1]
 
-    # Update the database mapping between the t= and p= links
+    url = url.replace('viewtopic.php', 'viewgame.php')
+    url = util.remove_sid(url)
+    assert 'viewgame.php' in url
+
+    parsed_url = urlimp.urlparse(url)
+    url_query = urlimp.parse_qs(parsed_url.query)  # Parse to dict containing lists of values
+    if 't' in url_query:
+        if url_query['t'][0] == '0':
+            # Deleted game
+            # When a game is deleted sometimes there's a phantom gamedump.php entry with garbage data.
+            # And the old URL may either not exist, or go to a Deleted Game page with original author
+            # and review link remnants
+            print("Skipping deleted game")
+            return
+    else:
+        assert 'p' in url_query
+
+    dom = scrape.get_page(url, cache)
+
+    title_node = dom.find(class_='title')
+    if title_node is None:  #phpbb3
+        title_node = dom.find(class_='topic-title')
+
+    title_query = urlimp.parse_qs(title_node.a['href'].split('?')[1])
+    topicnum = int(title_query['t'][0])
+    srcid = str(topicnum)
+
+    # Get postnum and update the database mapping between the t= and p= links
+
     post = dom.find(alt='Post')
     if post:  # phpbb2
         link = post.parent['href']
@@ -107,8 +122,15 @@ def process_game_page(url, gameinfo = None):
 
     postnum = int(link.split('#')[-1].replace('p', ''))  #phpbb3 prefixes a 'p'
 
+    # Sanity check that url matches what we found on the page
+    if 't' in url_query:
+        assert topicnum == int(url_query['t'][0])
+    else:
+        assert postnum == int(url_query['p'][0])
+
     link_db['p2t'][postnum] = topicnum
     link_db['t2p'][topicnum] = postnum
+
 
     if gameinfo:
         gameinfo_files = list(gameinfo.files + gameinfo.pics)
@@ -124,11 +146,8 @@ def process_game_page(url, gameinfo = None):
         print("Couldn't find in gamedump.php:", fname)
 
     game = gamedb.Game()
-    node = dom.find(class_='title')
-    if node is None:  #phpbb3
-        node = dom.find(class_='topic-title')
-    game.name = tostr(node)
-    game.url = url
+    game.name = tostr(title_node)
+    game.url = f"https://{parsed_url.netloc}{parsed_url.path}?t={topicnum}"
     print("Processing game:", game.name, "  \tsrcid:", srcid)
 
     author_box = dom.find(class_='gameauthor')

@@ -195,7 +195,7 @@ _tag_regexp = re.compile('<[^>]*>')
 
 def strip_html(text):
     "Remove HTML tags"
-    return ' '.join(_tag_regexp.split(text))
+    return ''.join(_tag_regexp.split(text))
 
 _sid_regex = re.compile('(.*)(&(amp;)?sid=[0-9a-f]*)(.*)')
 

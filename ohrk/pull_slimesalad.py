@@ -396,25 +396,27 @@ def process_game_page(url, gameinfo: GameInfo = None, cache = True, download_scr
         db.games[srcid] = game
     return game
 
-def process_gamedump(phpbb2 = False, limit = 9999):
+def get_gamedump(phpbb2 = False, cache = CACHE_INDEX):
+    url = OLD_GAMEDUMP_URL if phpbb2 else GAMEDUMP_URL
+    print("Fetching/parsing", url)
+    return scrape.get_url(url, cache = cache).decode('utf8') #('windows-1252')
+
+def process_gamedump(phpbb2 = False, limit = 9999, cache_index = CACHE_INDEX):
     """
     Generate the db and link_db databases (both global variables)
     """
-    url = OLD_GAMEDUMP_URL if phpbb2 else GAMEDUMP_URL
-    print("Fetching/parsing", url)
-    page = scrape.get_url(url, cache = CACHE_INDEX).decode('utf8') #('windows-1252')
 
     seen_names = set()
     seen_urls = set()
-    file = StringIO(page)
+    file = StringIO(get_gamedump(phpbb2, cache_index))
     for chunk in ChunkReader(file).each():
-        game = GameInfo(chunk)
-        assert game.name not in seen_names
-        assert game.url not in seen_urls
-        seen_names.add(game.name)
-        seen_urls.add(game.url)
+        gameinfo = GameInfo(chunk)
+        assert gameinfo.name not in seen_names
+        assert gameinfo.url not in seen_urls
+        seen_names.add(gameinfo.name)
+        seen_urls.add(gameinfo.url)
 
-        pageurl = game.url.replace('http://', 'https://')
+        pageurl = gameinfo.url.replace('http://', 'https://')
         if phpbb2:
             pageurl = pageurl.replace('/forum', '/phpbb2')
         game = process_game_page(pageurl, gameinfo)
@@ -424,28 +426,21 @@ def process_gamedump(phpbb2 = False, limit = 9999):
         if limit <= 0:
             break
 
-def process_one_game(url, limit = 9999):
+def process_one_game(url, cache_index = CACHE_INDEX):
     """
     Calls process_game_page() with gamedump.php entry
     """
-    print("Fetching/parsing gamedump.php...")
-    page = scrape.get_url(GAMEDUMP_URL, cache = CACHE_INDEX).decode('utf8') #('windows-1252')
+    game = process_game_page(url.replace('http://', 'https://'), get_gameinfo(url))
+    print(game.__dict__)
 
-    chunks = ChunkReader(StringIO(page))
-    process_game_page(url.replace('http://', 'https://'), chunks.find_game(url))
-
-
-def list_downloads_by_mod_date(url, limit = 9999):
+def list_downloads_by_mod_date():
     """
     See which downloads have been modified recently
     (Not used anyway; useful utility function)
     """
-    print("Fetching/parsing page...")
-    page = scrape.get_url(url).decode('windows-1252')
-
     files = []  # timestamp -> info
 
-    file = StringIO(page)
+    file = StringIO(get_gamedump())
     for chunk in ChunkReader(file).each():
         game = GameInfo(chunk)
         ginfo = "%s  %s %s" % (game.name.ljust(42), game.author.ljust(15), game.url)
@@ -478,8 +473,22 @@ def srcid_for_SS_link(url):
         return link_db['p2t'].get(postnum)
     return None
 
+def normalise_game_url(url):
+    "If it's a recognised SS game will remove any other query parameters from the url"
+    srcid = srcid_for_SS_link(url)
+    if srcid:
+        return "https://www.slimesalad.com/forum/viewgame.php?t=" + str(srcid)
+    return url
+
+# Used by discord bot
+def get_gameinfo(url) -> GameInfo:
+    gamedump = get_gamedump()
+    chunks = ChunkReader(StringIO(gamedump))
+    url = normalise_game_url(url)
+    return chunks.find_game(url)
+
 if __name__ == '__main__':
-    #list_downloads_by_mod_date('http://www.slimesalad.com/forum/gamedump.php')
+    #list_downloads_by_mod_date()
 
     link_db = db_layer.load('ss_links')
     # This is optional (OK to fail loading); used for double checking downloads match

@@ -119,7 +119,7 @@ def get_url(url, post_data = None, verbose = True, cache = True):
         os.remove(noexist_file)
 
     if cache and os.path.isfile(path):
-        if verbose: print("   found in cache:", url)
+        if verbose: print("   found in cache:", path.replace(page_cache, ''))
     else:
         print("    downloading", url)
         if TooManyRequests.remaining_allowed <= 0:

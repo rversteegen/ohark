@@ -55,6 +55,12 @@ class GameInfo(object):
                 return gf
         return None
 
+    def file_by_url(self, url):
+        for gf in self.files + self.pics:
+            if gf.url == url:
+                return gf
+        return None
+
 #######################################################################
 
 class GameFile(object):

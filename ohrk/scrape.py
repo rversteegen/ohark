@@ -90,8 +90,9 @@ def get_data_url(uri):
 
 class BadUrl(BadInput): pass
 
-def get_url(url, post_data = None, verbose = True, cache = True):
-    """Download a URL or fetch it from the cache, and return bytes.
+def _download_url(url, post_data = None, verbose = True, cache = True):
+    """Download a URL or fetch it from the cache.
+    Return (path, bytes_if_already_loaded).
     Raises BadUrl if it can't be downloaded."""
     # Get 'path': local location of cached file
     if cache and 'sid=' in url:
@@ -149,12 +150,26 @@ def get_url(url, post_data = None, verbose = True, cache = True):
             except OSError as e:
                 print(e)
                 os.unlink(path)
-            return data
+            return path, data
 
         else:
             # Doesn't catch 404 errors; returns the error page!
             filename, headers = urlretrieve(fullurl, path, data = encoded_data)
 
+    return path, None
+
+def download_url(url, post_data = None, verbose = True, cache = True):
+    """Download a URL or find it from the cache, returning path in the cache.
+    Raises BadUrl if it can't be downloaded."""
+    path, contents = _download_url(url, post_data, verbose, cache)
+    return path
+
+def get_url(url, post_data = None, verbose = True, cache = True):
+    """Download a URL or fetch it from the cache, and return bytes.
+    Raises BadUrl if it can't be downloaded."""
+    path, contents = _download_url(url, post_data, verbose, cache)
+    if contents is not None:
+        return contents
     with open(path, 'rb') as fil:
         return fil.read()
 

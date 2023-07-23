@@ -426,6 +426,34 @@ def process_gamedump(phpbb2 = False, limit = 9999, cache_index = CACHE_INDEX):
         if limit <= 0:
             break
 
+def compare_gamedumps(old_path, new_path):
+    "Diff two copies of gamedump.php"
+
+    def load_games(path):
+        with open(path, 'r') as fil:
+            games = {}
+            for chunk in ChunkReader(fil).each():
+                gameinfo = GameInfo(chunk)
+                games[gameinfo.url] = gameinfo
+            return games
+
+    old_games = load_games(old_path)
+    new_games = load_games(new_path)
+
+    old = set(old_games.keys())
+    new = set(new_games.keys())
+
+    added = [new_games[url] for url in new.difference(old)]
+    removed = [old_games[url] for url in old.difference(new)]
+    changed = []
+    for url in new.intersection(old):
+        oldgame = old_games[url]
+        newgame = new_games[url]
+        if oldgame.serialize() != newgame.serialize():
+            changed.append( (oldgame, newgame) )
+
+    return added, removed, changed
+
 def process_one_game(url, cache_index = CACHE_INDEX):
     """
     Calls process_game_page() with gamedump.php entry

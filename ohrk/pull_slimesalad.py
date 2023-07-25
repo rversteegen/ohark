@@ -25,7 +25,7 @@ link_db = {'p2t':{}, 't2p':{}}  # post -> topic and topic -> post mappings
 zips_db = None
 
 
-# Whether to cache gamedump.php
+# Whether to cache gamedump.php (True/False), or how long for (seconds, as int)
 # (Note: caching game pages may cause problems with listed downloads. Ideally
 # should intelligently figure out which caches to drop)
 CACHE_INDEX = True #False
@@ -454,7 +454,7 @@ def compare_gamedumps(old_path, new_path):
 
     return added, removed, changed
 
-def process_one_game(url, cache_index = CACHE_INDEX):
+def process_one_game(url):
     """
     Calls process_game_page() with gamedump.php entry
     """

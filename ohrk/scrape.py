@@ -6,6 +6,7 @@ a local cache, and some utility routines useful for crawling or scraping webpage
 
 import sys
 import time
+from typing import Union
 import re
 import os.path
 import posixpath
@@ -90,10 +91,28 @@ def get_data_url(uri):
 
 class BadUrl(BadInput): pass
 
-def _download_url(url, post_data = None, verbose = True, cache = True):
+def check_cached_file(cache: Union[bool, int], path: str, delete = True) -> bool:
+    """Deletes a cached file if it's too old (unless delete=False), returns True if it isn't.
+    cache: True/False to always/never use cached file.
+           int to use a cached file only if less than this many seconds old.
+    """
+    if not os.path.isfile(path):
+        return False
+    if cache is True:
+        return True
+    if not cache or os.stat(path).st_mtime < time.time() - cache:
+        if delete:
+            os.remove(path)
+        return False
+    return True
+
+def _download_url(url, post_data = None, verbose = True, cache: Union[bool, int] = True):
     """Download a URL or fetch it from the cache.
     Return (path, bytes_if_already_loaded).
-    Raises BadUrl if it can't be downloaded."""
+    Raises BadUrl if it can't be downloaded.
+    cache: True/False to always/never use cached file.
+           int to use a cached file only if less than this many seconds old.
+    """
     # Get 'path': local location of cached file
     if cache and 'sid=' in url:
         print("WARNING: get_url: sid= in url ", url)
@@ -114,12 +133,10 @@ def _download_url(url, post_data = None, verbose = True, cache = True):
     noexist_file = path + '.missing'
     util.mkdir(os.path.dirname(path))
 
-    if os.path.isfile(noexist_file):
-        if cache:
-            raise BadUrl("%s does not exist (cached)" % (url))
-        os.remove(noexist_file)
+    if check_cached_file(cache, noexist_file):
+        raise BadUrl("%s does not exist (cached)" % (url))
 
-    if cache and os.path.isfile(path):
+    if check_cached_file(cache, path, delete = False):  # Don't delete in-case no longer available
         if verbose: print("   found in cache:", path.replace(page_cache, ''))
     else:
         print("    downloading", url)
@@ -158,13 +175,13 @@ def _download_url(url, post_data = None, verbose = True, cache = True):
 
     return path, None
 
-def download_url(url, post_data = None, verbose = True, cache = True):
+def download_url(url, post_data = None, verbose = True, cache: Union[bool, int] = True):
     """Download a URL or find it from the cache, returning path in the cache.
     Raises BadUrl if it can't be downloaded."""
     path, contents = _download_url(url, post_data, verbose, cache)
     return path
 
-def get_url(url, post_data = None, verbose = True, cache = True):
+def get_url(url, post_data = None, verbose = True, cache: Union[bool, int] = True):
     """Download a URL or fetch it from the cache, and return bytes.
     Raises BadUrl if it can't be downloaded."""
     path, contents = _download_url(url, post_data, verbose, cache)
@@ -192,7 +209,7 @@ def auto_decode(data: bytes, default_encoding = 'utf-8'):
         data = data.decode('latin-1')
     return data
 
-def get_page(url, default_encoding = 'utf-8', cache = True, post_data = None):
+def get_page(url, default_encoding = 'utf-8', cache: Union[bool, int] = True, post_data = None):
     """Download a URL of an HTML page or fetch it from the cache, and return a BS object"""
     data = get_url(url, post_data, cache = cache)
     data = auto_decode(data, default_encoding)

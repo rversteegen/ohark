@@ -15,6 +15,8 @@ from ohrk.urlimp import urljoin
 from ohrk.slimesalad_gamedump import ChunkReader, GameInfo
 
 
+verbose = True
+
 GAMEDUMP_URL = 'https://www.slimesalad.com/forum/gamedump.php'
 OLD_GAMEDUMP_URL = 'https://www.slimesalad.com/phpbb2/gamedump.php'
 
@@ -299,7 +301,7 @@ def process_game_page(url, gameinfo: GameInfo = None, cache = True, download_scr
             else:
                 # Size string is garbage (but we could copy it from viewtopic.php page instead)
                 download.sizestr = expected
-        print(download.dumpinfo())
+        if verbose: print(download.dumpinfo())
         game.downloads.append(download)
 
 
@@ -352,9 +354,9 @@ def process_game_page(url, gameinfo: GameInfo = None, cache = True, download_scr
             fname, caption, _, _ = parse_phpbb3_attachment(img_tag)
         img_url = urljoin(url, util.remove_sid(img_tag['src']))
         if download_screens:
-            game.add_screenshot_link(db.name, srcid, img_url, caption, filename = fname)
+            game.add_screenshot_link(db.name, srcid, img_url, caption, filename = fname, verbose = verbose)
         else:
-            game.add_screenshot_no_download(img_url, caption)
+            game.add_screenshot_no_download(img_url, caption, verbose = verbose)
         seen_file(fname)
 
     # Reviews
@@ -460,6 +462,7 @@ def process_one_game(url):
     """
     game = process_game_page(url.replace('http://', 'https://'), get_gameinfo(url))
     print(game.__dict__)
+    return game
 
 def list_downloads_by_mod_date():
     """

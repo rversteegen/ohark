@@ -91,7 +91,7 @@ def get_data_url(uri):
 
 class BadUrl(BadInput): pass
 
-def check_cached_file(cache: Union[bool, int], path: str, delete = True) -> bool:
+def check_cached_file(cache: Union[bool, int], path: str, verbose = False, delete = True) -> bool:
     """Deletes a cached file if it's too old (unless delete=False), returns True if it isn't.
     cache: True/False to always/never use cached file.
            int to use a cached file only if less than this many seconds old.
@@ -101,6 +101,8 @@ def check_cached_file(cache: Union[bool, int], path: str, delete = True) -> bool
     if cache is True:
         return True
     if not cache or os.stat(path).st_mtime < time.time() - cache:
+        if verbose:
+            print("  ignoring stale cached", path.replace(page_cache, ''))
         if delete:
             os.remove(path)
         return False
@@ -133,10 +135,10 @@ def _download_url(url, post_data = None, verbose = True, cache: Union[bool, int]
     noexist_file = path + '.missing'
     util.mkdir(os.path.dirname(path))
 
-    if check_cached_file(cache, noexist_file):
+    if check_cached_file(cache, noexist_file, verbose):
         raise BadUrl("%s does not exist (cached)" % (url))
 
-    if check_cached_file(cache, path, delete = False):  # Don't delete in-case no longer available
+    if check_cached_file(cache, path, verbose, delete = False):  # Don't delete in-case no longer available
         if verbose: print("   found in cache:", path.replace(page_cache, ''))
     else:
         print("    downloading", url)

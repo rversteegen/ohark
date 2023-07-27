@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-from datetime import datetime
+from calendar import timegm
+from datetime import datetime, timezone
 import re
 import time
 import os
@@ -413,7 +414,7 @@ def process_game_page(url, gameinfo: GameInfo = None, cache = True, download_scr
             # Use notice.text to ignore the user profile link
             match = re.search('on (.*), edited', notice.text)
             # E.g. Thu Jul 12, 2018 12:11 pm, in UTC
-            game.mtime = time.mktime(time.strptime(match.group(1), "%a %b %d, %Y %I:%M %p"))
+            game.mtime = timegm(time.strptime(match.group(1), "%a %b %d, %Y %I:%M %p"))
             #print("edit time", datetime.utcfromtimestamp(game.mtime).ctime())
         else:
             # No edit info? Use original post time

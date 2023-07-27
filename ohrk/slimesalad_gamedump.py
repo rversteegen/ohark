@@ -7,7 +7,7 @@ mirrordir = "./slimesalad/"
 #----------------------------------------------------------------------
 
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 import time
 import re
 
@@ -76,7 +76,7 @@ class GameFile(object):
         self.name = chunk[0]
         self.url = chunk[1]
         timestamp = float(chunk[2])
-        self.date = datetime.utcfromtimestamp(timestamp)
+        self.date = datetime.utcfromtimestamp(timestamp).replace(tzinfo = timezone.utc)
 
     def is_pic(self):
         name = self.name.lower()
@@ -86,7 +86,7 @@ class GameFile(object):
         return False
 
     def serialize(self):
-        s = "%s\n%s\n%d\n" % (self.name, self.url, time.mktime(self.date.timetuple()))
+        s = "%s\n%s\n%d\n" % (self.name, self.url, self.date.timestamp())
         return s
 
 #######################################################################

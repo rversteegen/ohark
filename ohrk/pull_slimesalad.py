@@ -367,10 +367,34 @@ def process_game_page(url, gameinfo: GameInfo = None, cache = True, download_scr
 
     # Reviews
     game.reviews = []
-    for tag in dom.find_all('a', string=('Review', 'Second Review')):
-        author = tostr(tag.find_next_sibling('a'))
-        review = gamedb.Review(urljoin(url, tag['href']), author, game.name, location = 'on Slime Salad')
-        print(review.dumpinfo())
+
+    # The review links appear after  are in <p>'s sandwiched
+    review_header = dom.find('div', string='Reviews')
+    review_row = review_header.next_sibling
+    while True:
+        if isinstance(review_row, bs4.NavigableString):  # Blank space
+            review_row = review_row.next_sibling
+            continue
+        # "[icon] [review] by [author]" lines are wrapped in <p> in phpbb3, <div class="attachrow"><a href=""> in phpbb2
+        by = review_row.find(string = " by ")
+        if not by:
+            break
+        review_row = review_row.next_sibling
+
+        review_link = by.previous_sibling
+        author_link = by.next_sibling
+        assert review_link.name == 'a' and author_link.name == 'a'
+
+        # There are two review link styles on the phpbb3 site:
+        #<p><img src=...> <a href="http://.../forum/viewtopic.php?t=5655" class="postlink">Second Review</a> by <a href="http://.../profile.php?mode=viewprofile&amp;u=3" class="postlink">Meatballsub</a></p>
+        #<p><img src=...> <a href="/forum/viewtopic.php?f=5&amp;t=8189">Vikings of Midgard Review</a> by <a href="/forum/memberlist.php?mode=viewprofile&amp;u=203">Baconlabs</a></p>
+        # urljoin cleans up the &amp;
+        # TODO: but should remove the f=5
+        rurl = urljoin(url, review_link['href']).replace('http://', 'https://')
+
+        # Could use to_str(review_link) as the review title, but typically it's just "Review"
+        review = gamedb.Review(rurl, tostr(author_link), game.name, location = 'on Slime Salad')
+        if verbose: print(review.dumpinfo())
         game.reviews.append(review)
 
     # Tags
@@ -550,7 +574,8 @@ if __name__ == '__main__':
     #process_one_game('http://www.slimesalad.com/forum/viewgame.php?t=8239')  # Inline attachments that are "no longer available"
     #process_one_game('http://www.slimesalad.com/forum/viewgame.php?t=7045')
     #process_one_game('http://www.slimesalad.com/forum/viewgame.php?t=360')
-    process_one_game('http://www.slimesalad.com/forum/viewgame.php?t=6677')  # Code block
+    #process_one_game('http://www.slimesalad.com/forum/viewgame.php?t=6677')  # Code block
+    #process_one_game('https://www.slimesalad.com/forum/viewtopic.php?t=38')  # Weird review links
     db.save()
     db_layer.save('ss_links', link_db)
     print(stats)

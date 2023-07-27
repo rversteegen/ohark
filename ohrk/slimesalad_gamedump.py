@@ -76,7 +76,7 @@ class GameFile(object):
         self.name = chunk[0]
         self.url = chunk[1]
         timestamp = float(chunk[2])
-        self.date = datetime.fromtimestamp(timestamp)
+        self.date = datetime.utcfromtimestamp(timestamp)
 
     def is_pic(self):
         name = self.name.lower()

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from datetime import datetime
 import re
 import time
 import os
@@ -261,9 +262,13 @@ def process_game_page(url, gameinfo: GameInfo = None, cache = True, download_scr
             title, description, sizestr, download_count = parse_phpbb3_attachment(a_tag)
         else:
             title, description, sizestr, download_count = parse_game_download(a_tag)
+        download_url = urljoin(url, util.remove_sid(a_tag['href']))
 
+        download_mtime = None
         if gameinfo:
-            gamefile = gameinfo.file_by_name(title)
+            # The title is not unique!
+            #gamefile = gameinfo.file_by_name(title)
+            gamefile = gameinfo.file_by_url(download_url)
             if not gamefile:
                 print("!! Couldn't find %s, maybe the cached game page has a download that's since "
                       "been removed (not in gamedump.php)" % title)
@@ -279,16 +284,17 @@ def process_game_page(url, gameinfo: GameInfo = None, cache = True, download_scr
                     # Downloads now download with their original filename (while
                     # the download URL doesn't contain the filename)
                     zip_fname = gamefile.name
+                download_mtime = gamefile.date.timestamp()
         else:
             zip_fname = title
             stats['files_not_in_gamedump'] += 1
         seen_file(title)
 
-        download_url = urljoin(url, util.remove_sid(a_tag['href']))
         download = gamedb.DownloadLink('ss', zip_fname, download_url, title)
         download.description = description
         download.sizestr = sizestr
         download.download_count = download_count
+        download.mtime = download_mtime
 
         # TODO: download file naming has changed, match up all the old downloads without redownloading
 
@@ -375,14 +381,23 @@ def process_game_page(url, gameinfo: GameInfo = None, cache = True, download_scr
     game.description = clean_description(descrip_tag)
     #print("description:\n", repr(game.description))
 
-    # Edit time
+    # Edit time. But it seems only older games show last edit time
+    # at the bottom of the post.
     if phpbb == 3:
         notice = dom.find(class_='notice')
         if notice:
-            # Use notice.txt to ignore the user profile link
+            # Use notice.text to ignore the user profile link
             match = re.search('on (.*), edited', notice.text)
-            # E.g. Thu Jul 12, 2018 12:11 pm
+            # E.g. Thu Jul 12, 2018 12:11 pm, in UTC
             game.mtime = time.mktime(time.strptime(match.group(1), "%a %b %d, %Y %I:%M %p"))
+            #print("edit time", datetime.utcfromtimestamp(game.mtime).ctime())
+        else:
+            # No edit info? Use original post time
+            time_tag = dom.find('time')
+            if time_tag:
+                game.mtime = datetime.fromisoformat(time_tag['datetime']).timestamp()
+                #print("post time", datetime.utcfromtimestamp(game.mtime).ctime())
+
 
     # Double-check that there are no NavigableStrings or undecoded strings
     game = scrape.clean_strings(game)

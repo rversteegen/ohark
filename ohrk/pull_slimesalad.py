@@ -535,8 +535,9 @@ def srcid_for_SS_link(url):
     query = urlimp.parse_qs(parsed.query)  # Parse to dict containing lists of values
     if 't' in query:
         topicnum = int(query['t'][0])
-        if topicnum not in link_db['t2p']:
-            return None
+        # Don't need to fail in this case
+        # if topicnum not in link_db['t2p']:
+        #     return None
         return topicnum
     elif 'p' in query:
         postnum = int(query['p'][0])
@@ -551,8 +552,8 @@ def normalise_game_url(url):
     return url
 
 # Used by discord bot
-def get_gameinfo(url) -> GameInfo:
-    gamedump = get_gamedump()
+def get_gameinfo(url, cache = CACHE_INDEX) -> GameInfo:
+    gamedump = get_gamedump(cache = cache)
     chunks = ChunkReader(StringIO(gamedump))
     url = normalise_game_url(url)
     return chunks.find_game(url)

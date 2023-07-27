@@ -11,6 +11,12 @@ from datetime import datetime
 import time
 import re
 
+def remove_proto(url):
+    return url.replace('https://', '').replace('http://', '')
+
+def urls_match(url1, url2):
+    return remove_proto(url1) == remove_proto(url2)
+
 #######################################################################
 
 class GameMirrorer(object):
@@ -57,7 +63,7 @@ class GameInfo(object):
 
     def file_by_url(self, url):
         for gf in self.files + self.pics:
-            if gf.url == url:
+            if urls_match(gf.url, url):
                 return gf
         return None
 
@@ -126,7 +132,7 @@ class ChunkReader(object):
     def find_game(self, page_url):
         for chunk in self.each():
             game = GameInfo(chunk)
-            if game.url == page_url.replace('https://', 'http://'):
+            if urls_match(game.url, page_url):
                 return game
         raise KeyError("No known game with URL " + page_url)
 

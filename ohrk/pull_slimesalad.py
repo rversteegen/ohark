@@ -110,7 +110,7 @@ def process_game_page(url, gameinfo: GameInfo = None, cache = True, download_scr
     else:
         assert 'p' in url_query
 
-    dom = scrape.get_page(url, cache)
+    dom = scrape.get_page(url, cache = cache)
 
     title_node = dom.find(class_='title')
     if title_node is None:  #phpbb3

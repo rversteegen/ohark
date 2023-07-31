@@ -12,10 +12,7 @@ from ohrk import urlimp
 ### Util
 
 # A high precision wallclock timer
-if os.name == 'posix':
-    timer = time.time
-else:
-    timer = time.clock
+timer = time.perf_counter
 
 class Timer(object):
     """

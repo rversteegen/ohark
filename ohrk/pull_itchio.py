@@ -10,9 +10,9 @@ if __name__ == '__main__':
 from ohrk import gamedb, scrape, util
 
 
-tag_ohrrpgce_url = "https://itch.io/games/newest/tag-ohrrpgce.xml"
+OHRRPGCE_TAG_URL = "https://itch.io/games/newest/tag-ohrrpgce.xml"
 # The manually mantained collection of OHR games, https://itch.io/c/1079248/ohr-games
-ohrrpgce_collection_url = "https://itch.io/games/newest/collection-1079248.xml"
+OHRRPGCE_COLLECTION_URL = "https://itch.io/games/newest/collection-1079248.xml"
 
 
 def parse_time(tstr: str):
@@ -30,7 +30,7 @@ def get_srcid(game: gamedb.Game):
     return user + "_" + gamename
 
 def parse_rss_node_game(node: ElementTree.Element) -> gamedb.Game:
-    print(node.findtext('guid'))
+    #print(node.findtext('guid'))
 
     game = gamedb.Game()
     game.name = node.findtext('plainTitle')
@@ -45,6 +45,9 @@ def parse_rss_node_game(node: ElementTree.Element) -> gamedb.Game:
     game.blurb = desc
     game.ctime = parse_time(node.findtext('createDate'))
     game.pubtime = parse_time(node.findtext('pubDate'))
+
+    #print(node.findtext('updateDate'), node.findtext('pubDate'), game.name)
+    #print(f"{game.ctime}, {game.pubtime}, {game.mtime}, {game.name}")
 
     user, gamename = split_itch_io_url(game.url)
     game.author = user
@@ -61,7 +64,10 @@ def get_all_rss_items(url, cache = True):
     "Fetch all items on all pages of an rss feed, yielding the Nodes"
     guids = set()
     for page in range(1, 30):
-        contents = scrape.get_url(f"{url}?page={page}", cache = cache)
+        pageurl = url
+        if page > 1:
+            pageurl += f"{url}?page={page}"
+        contents = scrape.get_url(pageurl, cache = cache)
         tree = ElementTree.fromstring(contents)
 
         if page > 1:
@@ -84,6 +90,7 @@ def get_new_games(url, cache = False):
     "Returns just games on the first page of 'url' rss feed, which the caller can use to compare"
     games = {}
     contents = scrape.get_url(url, cache = cache)
+    #print("get_new_games", url)
     for node in rss_items(contents):
         srcid, game = parse_rss_node_game(node)
         games[srcid] = game
@@ -94,11 +101,11 @@ def get_all_games():
 
     db = gamedb.GameList('itch.io')
 
-    for node in get_all_rss_items(ohrrpgce_collection_url):
+    for node in get_all_rss_items(OHRRPGCE_COLLECTION_URL):
         srcid, game = parse_rss_node_game(node)
         db.games[srcid] = game
 
-    for node in get_all_rss_items(tag_ohrrpgce_url):
+    for node in get_all_rss_items(OHRRPGCE_TAG_URL):
         srcid, game = parse_rss_node_game(node)
         if srcid not in db.games:
             print(srcid + " is tagged ohrrpgce but missing from collection!")

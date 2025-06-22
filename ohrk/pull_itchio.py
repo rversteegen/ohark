@@ -60,13 +60,13 @@ def rss_items(contents: str):
     tree = ElementTree.fromstring(contents)
     return tree.find('channel').findall('item')
 
-def get_all_rss_items(url, cache = True):
+def get_all_rss_items(url, cache = False):
     "Fetch all items on all pages of an rss feed, yielding the Nodes"
     guids = set()
     for page in range(1, 30):
         pageurl = url
         if page > 1:
-            pageurl += f"{url}?page={page}"
+            pageurl += f"?page={page}"
         contents = scrape.get_url(pageurl, cache = cache)
         tree = ElementTree.fromstring(contents)
 
@@ -74,6 +74,7 @@ def get_all_rss_items(url, cache = True):
             assert f"Page {page} " in tree.find('channel').findtext('title'), url + " doesn't support ?page= query"
 
         items = tree.find('channel').findall('item')
+        #print(f"page {page} numitems {len(items)}")
         if len(items) == 0:
             return
 
@@ -84,7 +85,7 @@ def get_all_rss_items(url, cache = True):
                 guids.add(guid)
                 yield item
             else:
-                print("DUPLICATE! ", guid)
+                print("DUPLICATE item in rss! ", guid, "on", pageurl)
 
 def get_new_games(url, cache = False):
     "Returns just games on the first page of 'url' rss feed, which the caller can use to compare"

@@ -8,6 +8,8 @@ Should probably use a real DB, but for now they are just saved as .pickle files.
 
 import os
 import pickle
+from dataclasses import dataclass
+from typing import Any
 
 from ohrk import util
 
@@ -18,19 +20,23 @@ DB_DIR = os.path.join(os.path.dirname(__file__), 'databases')
 
 ###############################################################################
 
-class CacheItem:
-    "Has two members: .db and .mtime"
 
+@dataclass(init = False)
+class CacheItem:
+    db: Any
+    mtime: float
 
 class RequestContext:
     """A instance should be created when beginning a request, to hold
     request-specific caches, etc.
     It is a global shared for all DB accesses until a new object is created."""
 
-    def __init__(self):
+    def __init__(self, cache = True):
         # If a DB appears in the quickcache, then no check is made whether it needs to be reloaded:
         # it is only reloaded once per request.
-        self.quickcache = {}
+        if cache:
+            self.quickcache = {}
+        # Otherwise exceptions on trying to access nonexistent quickcache are ignored
         # Time DB loads
         self.timer = util.Timer()
         global _context
@@ -39,7 +45,7 @@ class RequestContext:
 
 # _cache holds loaded databases, cached between requests.
 _cache = {}
-_context = RequestContext()  # Dummy value, until set by a real request
+_context = RequestContext(cache = False)  # Dummy value, until set by a real request
 
 
 def db_filename(source_name):
@@ -88,11 +94,14 @@ def load(source_name):
                 del _cache[source_name]
 
         if source_name not in _cache:
-            db = _load(source_name)
-            if not db:
+            cacheitem = _load(source_name)
+            if not cacheitem:
                 return None
-            _cache[source_name] = db
-            _context.quickcache[source_name] = db.db
+            _cache[source_name] = cacheitem
+            try:
+                _context.quickcache[source_name] = cacheitem.db
+            except:
+                pass
         return _cache[source_name].db
 
 def save(source_name, db):
@@ -105,9 +114,11 @@ def save(source_name, db):
         print("Saving " + fname)
         with open(fname, 'wb') as dbfile:
             pickle.dump(db, dbfile, 2)  # protocol 2 for python 2 compat
-        item = CacheItem()
-        item.db = db
-        item.mtime = os.stat(fname).st_mtime
-        _cache[source_name] = item
-	_context.quickcache[source_name] = db
-
+        cacheitem = CacheItem()
+        cacheitem.db = db
+        cacheitem.mtime = os.stat(fname).st_mtime
+        _cache[source_name] = cacheitem
+        try:
+            _context.quickcache[source_name] = db
+        except:
+            pass

@@ -102,10 +102,12 @@ def save(source_name, db):
     with _context.timer:
         util.mkdir(DB_DIR)
         fname = db_filename(source_name)
+        print("Saving " + fname)
         with open(fname, 'wb') as dbfile:
             pickle.dump(db, dbfile, 2)  # protocol 2 for python 2 compat
         item = CacheItem()
         item.db = db
         item.mtime = os.stat(fname).st_mtime
         _cache[source_name] = item
+	_context.quickcache[source_name] = db
 
